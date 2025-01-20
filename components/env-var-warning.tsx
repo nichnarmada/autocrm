@@ -1,10 +1,10 @@
-import Link from "next/link";
-import { Badge } from "./ui/badge";
-import { Button } from "./ui/button";
+import Link from "next/link"
+import { Badge } from "./ui/badge"
+import { Button } from "./ui/button"
 
 export function EnvVarWarning() {
   return (
-    <div className="flex gap-4 items-center">
+    <div className="flex items-center gap-4">
       <Badge variant={"outline"} className="font-normal">
         Supabase environment variables required
       </Badge>
@@ -14,7 +14,7 @@ export function EnvVarWarning() {
           size="sm"
           variant={"outline"}
           disabled
-          className="opacity-75 cursor-none pointer-events-none"
+          className="pointer-events-none cursor-none opacity-75"
         >
           <Link href="/sign-in">Sign in</Link>
         </Button>
@@ -23,11 +23,11 @@ export function EnvVarWarning() {
           size="sm"
           variant={"default"}
           disabled
-          className="opacity-75 cursor-none pointer-events-none"
+          className="pointer-events-none cursor-none opacity-75"
         >
           <Link href="/sign-up">Sign up</Link>
         </Button>
       </div>
     </div>
-  );
+  )
 }
