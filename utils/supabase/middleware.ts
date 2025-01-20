@@ -40,18 +40,18 @@ export const updateSession = async (request: NextRequest) => {
     const user = await supabase.auth.getUser()
 
     // Handle unauthenticated users
-  if (
-    !user &&
-    !request.nextUrl.pathname.startsWith("/sign-in") &&
-    !request.nextUrl.pathname.startsWith("/sign-up") &&
-    !request.nextUrl.pathname.startsWith("/forgot-password") &&
-    !request.nextUrl.pathname.startsWith("/verify-email") &&
-    !request.nextUrl.pathname.startsWith("/auth")
-  ) {
-    const url = request.nextUrl.clone()
-    url.pathname = "/login"
-    return NextResponse.redirect(url)
-  }
+    if (
+      !user &&
+      !request.nextUrl.pathname.startsWith("/sign-in") &&
+      !request.nextUrl.pathname.startsWith("/sign-up") &&
+      !request.nextUrl.pathname.startsWith("/forgot-password") &&
+      !request.nextUrl.pathname.startsWith("/verify-email") &&
+      !request.nextUrl.pathname.startsWith("/auth")
+    ) {
+      const url = request.nextUrl.clone()
+      url.pathname = "/sign-in"
+      return NextResponse.redirect(url)
+    }
 
     return response
   } catch (e) {

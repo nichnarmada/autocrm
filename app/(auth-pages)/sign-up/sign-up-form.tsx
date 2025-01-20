@@ -65,7 +65,7 @@ export function SignUpForm({ messageParams }: SignUpFormProps) {
         <p className="text-center text-sm text-muted-foreground">
           Already have an account?{" "}
           <Link
-            href="/login"
+            href="/sign-in"
             className="font-medium text-primary hover:underline"
           >
             Sign in
