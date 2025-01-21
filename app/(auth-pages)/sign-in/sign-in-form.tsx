@@ -1,6 +1,5 @@
 "use client"
 
-import { signInAction } from "@/app/actions"
 import { FormMessage, Message } from "@/components/form-message"
 import { SubmitButton } from "@/components/submit-button"
 import { Input } from "@/components/ui/input"
@@ -12,9 +11,10 @@ import { useEffect } from "react"
 
 interface LoginFormProps {
   messageParams: Message
+  onSubmit: (formData: FormData) => Promise<void>
 }
 
-export function LoginForm({ messageParams }: LoginFormProps) {
+export function LoginForm({ messageParams, onSubmit }: LoginFormProps) {
   const { toast } = useToast()
 
   // Show error toast if there's an error
@@ -29,7 +29,7 @@ export function LoginForm({ messageParams }: LoginFormProps) {
 
   return (
     <>
-      <form className="space-y-4">
+      <form action={onSubmit} className="space-y-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input
@@ -60,11 +60,7 @@ export function LoginForm({ messageParams }: LoginFormProps) {
           />
         </div>
 
-        <SubmitButton
-          className="w-full"
-          pendingText="Signing in..."
-          formAction={signInAction}
-        >
+        <SubmitButton className="w-full" pendingText="Signing in...">
           Sign in
         </SubmitButton>
 

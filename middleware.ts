@@ -85,6 +85,28 @@ export async function middleware(request: NextRequest) {
         ignoreDuplicates: false,
       }
     )
+
+    // Get user's role from profiles
+    const { data: role } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user?.id)
+      .single()
+
+    // Redirect based on role
+    if (
+      role?.role === "customer" &&
+      request.nextUrl.pathname.startsWith("/admin")
+    ) {
+      return NextResponse.redirect(new URL("/dashboard", request.url))
+    }
+
+    if (
+      role?.role === "agent" &&
+      request.nextUrl.pathname.startsWith("/customer")
+    ) {
+      return NextResponse.redirect(new URL("/tickets", request.url))
+    }
   }
 
   // Handle unauthenticated users

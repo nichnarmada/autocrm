@@ -1,6 +1,5 @@
 import { Message } from "@/components/form-message"
 import { SignUpForm } from "./sign-up-form"
-import { ThemeSwitcher } from "@/components/theme-switcher"
 
 type SearchParamsProps = {
   searchParams: Promise<{ [key: string]: string | string[] | undefined }>
