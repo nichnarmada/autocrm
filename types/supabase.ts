@@ -164,6 +164,7 @@ export type Database = {
       tickets: {
         Row: {
           assigned_to: string | null
+          category: Database["public"]["Enums"]["ticket_category"]
           created_at: string | null
           created_by: string | null
           description: string | null
@@ -176,6 +177,7 @@ export type Database = {
         }
         Insert: {
           assigned_to?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -188,6 +190,7 @@ export type Database = {
         }
         Update: {
           assigned_to?: string | null
+          category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null
           created_by?: string | null
           description?: string | null
@@ -216,6 +219,14 @@ export type Database = {
       [_ in never]: never
     }
     Enums: {
+      ticket_category:
+        | "bug"
+        | "feature_request"
+        | "support"
+        | "question"
+        | "documentation"
+        | "enhancement"
+        | "other"
       ticket_priority: "low" | "medium" | "high" | "urgent"
       ticket_status: "new" | "open" | "in_progress" | "resolved" | "closed"
       user_role: "admin" | "agent" | "customer"
