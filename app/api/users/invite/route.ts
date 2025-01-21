@@ -5,12 +5,21 @@ export async function POST(request: Request) {
   try {
     const supabase = await createClient()
     const json = await request.json()
-    const { email, role } = json
+    const { email } = json
 
-    // Check if user already exists
+    // Get the current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    if (!user) {
+      return NextResponse.json({ error: "Not authenticated" }, { status: 401 })
+    }
+
+    // First check if user already exists
     const { data: existingUser } = await supabase
       .from("profiles")
-      .select("id")
+      .select("role")
       .eq("email", email)
       .single()
 
@@ -21,26 +30,24 @@ export async function POST(request: Request) {
       )
     }
 
-    // Send invite email with redirect to setup profile
-    const { data, error } = await supabase.auth.signInWithOtp({
+    // Send invitation with redirect to setup profile
+    const { error } = await supabase.auth.signInWithOtp({
       email,
       options: {
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/setup-profile`,
         data: {
-          role: role || "agent",
+          role: "agent",
+          invited_by: user.id,
         },
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/setup-profile`,
       },
     })
 
     if (error) {
-      console.error("Error sending invitation:", error)
+      console.error("Error sending invite:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({
-      success: true,
-      message: "Invitation email sent successfully",
-    })
+    return NextResponse.json({ success: true })
   } catch (error) {
     console.error("Error in invite API:", error)
     return NextResponse.json(
