@@ -1,5 +1,6 @@
 "use client"
 
+import { Suspense } from "react"
 import { useEffect } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
@@ -16,11 +17,18 @@ import {
 import { setupProfileAction } from "@/app/actions"
 import { useSearchParams } from "next/navigation"
 
+// Separate component for error display
+function ErrorDisplay() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get("error")
+
+  if (!error) return null
+  return <div className="text-sm text-red-500">{error}</div>
+}
+
 export default function SetupProfilePage() {
   const router = useRouter()
-  const searchParams = useSearchParams()
   const supabase = createClient()
-  const error = searchParams.get("error")
 
   useEffect(() => {
     const checkSession = async () => {
@@ -67,7 +75,9 @@ export default function SetupProfilePage() {
                 required
               />
             </div>
-            {error && <div className="text-sm text-red-500">{error}</div>}
+            <Suspense>
+              <ErrorDisplay />
+            </Suspense>
             <Button type="submit" className="w-full">
               Complete Setup
             </Button>
