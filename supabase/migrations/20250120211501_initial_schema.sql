@@ -1,6 +1,70 @@
 -- Enable necessary extensions
 create extension if not exists "uuid-ossp";
 
+-- Create role enum
+create type user_role as enum (
+  'admin',
+  'agent',
+  'customer'
+);
+
+-- Create profiles table
+create table profiles (
+  id uuid primary key references auth.users on delete cascade,
+  full_name text,
+  avatar_url text,
+  role user_role not null default 'customer',
+  created_at timestamp with time zone default now(),
+  updated_at timestamp with time zone default now()
+);
+
+-- Add RLS policies for profiles
+alter table profiles enable row level security;
+
+-- Allow users to view their own profile
+create policy "Users can view own profile"
+  on profiles for select
+  using (auth.uid() = id);
+
+-- Allow users to update their own profile
+create policy "Users can update own profile"
+  on profiles for update
+  using (auth.uid() = id);
+
+-- Create profile on signup trigger
+create or replace function public.handle_new_user()
+returns trigger as $$
+declare
+  default_role user_role := 'customer';
+begin
+  -- Get role from metadata, default to customer if not specified
+  if new.raw_user_meta_data->>'role' is not null then
+    default_role := (new.raw_user_meta_data->>'role')::user_role;
+  end if;
+
+  insert into public.profiles (
+    id,
+    full_name,
+    avatar_url,
+    role,
+    email
+  )
+  values (
+    new.id,
+    coalesce(new.raw_user_meta_data->>'full_name', new.raw_user_meta_data->>'temp_display_name'),
+    new.raw_user_meta_data->>'avatar_url',
+    default_role,
+    new.email
+  );
+  return new;
+end;
+$$ language plpgsql security definer;
+
+-- Trigger to create profile on signup
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute procedure public.handle_new_user();
+
 -- Create enum types
 create type ticket_status as enum (
   'new',
@@ -72,8 +136,10 @@ alter table ticket_comments enable row level security;
 create policy "Team members can view their teams"
   on teams for select
   using (
-    auth.uid() in (
-      select user_id from team_members where team_id = teams.id
+    exists (
+      select 1 from team_members
+      where team_members.team_id = teams.id
+      and team_members.user_id = auth.uid()
     )
   );
 
@@ -81,9 +147,7 @@ create policy "Team members can view their teams"
 create policy "Users can view team members"
   on team_members for select
   using (
-    auth.uid() in (
-      select user_id from team_members where team_id = team_members.team_id
-    )
+    auth.uid() = user_id
   );
 
 -- Tickets policies
@@ -92,8 +156,10 @@ create policy "Users can view assigned tickets"
   using (
     auth.uid() = assigned_to
     or auth.uid() = created_by
-    or auth.uid() in (
-      select user_id from team_members where team_id = tickets.team_id
+    or exists (
+      select 1 from team_members
+      where team_members.team_id = tickets.team_id
+      and team_members.user_id = auth.uid()
     )
   );
 
@@ -116,14 +182,15 @@ create policy "Assigned users can update tickets"
 create policy "Users can view ticket comments"
   on ticket_comments for select
   using (
-    auth.uid() in (
-      select created_by from tickets where id = ticket_comments.ticket_id
-      union
-      select assigned_to from tickets where id = ticket_comments.ticket_id
-      union
-      select user_id from team_members 
-      where team_id = (
-        select team_id from tickets where id = ticket_comments.ticket_id
+    exists (
+      select 1 from tickets t
+      where t.id = ticket_comments.ticket_id
+      and (
+        t.created_by = auth.uid()
+        or t.assigned_to = auth.uid()
+        or t.team_id in (
+          select team_id from team_members where user_id = auth.uid()
+        )
       )
     )
   );
@@ -155,5 +222,11 @@ create trigger set_updated_at
 
 create trigger set_updated_at
   before update on ticket_comments
+  for each row
+  execute function handle_updated_at();
+
+-- Add updated_at trigger for profiles
+create trigger set_profile_updated_at
+  before update on profiles
   for each row
   execute function handle_updated_at(); 
