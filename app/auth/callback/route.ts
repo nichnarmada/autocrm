@@ -8,17 +8,29 @@ export async function GET(request: Request) {
   const requestUrl = new URL(request.url)
   const code = requestUrl.searchParams.get("code")
   const origin = requestUrl.origin
-  const redirectTo = requestUrl.searchParams.get("redirect_to")?.toString()
+  const next = requestUrl.searchParams.get("next")
 
   if (code) {
     const supabase = await createClient()
-    await supabase.auth.exchangeCodeForSession(code)
+    const {
+      data: { user },
+      error,
+    } = await supabase.auth.exchangeCodeForSession(code)
+
+    // If this is from an invite link, redirect to setup profile
+    if (
+      user?.user_metadata?.role === "agent" &&
+      !user?.user_metadata?.full_name
+    ) {
+      return NextResponse.redirect(`${origin}/setup-profile`)
+    }
   }
 
-  if (redirectTo) {
-    return NextResponse.redirect(`${origin}${redirectTo}`)
+  // If there's a next parameter, redirect there
+  if (next) {
+    return NextResponse.redirect(`${origin}${next}`)
   }
 
-  // Update default redirect
+  // Default redirect
   return NextResponse.redirect(`${origin}/dashboard`)
 }

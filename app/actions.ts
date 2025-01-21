@@ -130,3 +130,53 @@ export const signOutAction = async () => {
   await supabase.auth.signOut()
   return redirect("/sign-in")
 }
+
+export async function setupProfileAction(formData: FormData) {
+  const supabase = await createClient()
+  const fullName = formData.get("fullName") as string
+  const password = formData.get("password") as string
+  const confirmPassword = formData.get("confirmPassword") as string
+
+  if (!fullName || !password || !confirmPassword) {
+    return encodedRedirect("error", "/setup-profile", "All fields are required")
+  }
+
+  if (password !== confirmPassword) {
+    return encodedRedirect("error", "/setup-profile", "Passwords do not match")
+  }
+
+  try {
+    // Update the user's password
+    const { error: updateError } = await supabase.auth.updateUser({
+      password,
+    })
+
+    if (updateError) throw updateError
+
+    // Get the current user
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) throw new Error("No user found")
+
+    // Update the user's profile
+    const { error: profileError } = await supabase
+      .from("profiles")
+      .update({
+        full_name: fullName,
+        role: "agent", // Ensure role is set to agent
+      })
+      .eq("id", user.id)
+
+    if (profileError) throw profileError
+
+    return redirect("/dashboard")
+  } catch (error) {
+    console.error("Error setting up profile:", error)
+    return encodedRedirect(
+      "error",
+      "/setup-profile",
+      error instanceof Error ? error.message : "Something went wrong"
+    )
+  }
+}

@@ -11,13 +11,6 @@ import {
 } from "@/components/ui/dialog"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
-import {
-  Select,
-  SelectContent,
-  SelectItem,
-  SelectTrigger,
-  SelectValue,
-} from "@/components/ui/select"
 import { UserPlus } from "lucide-react"
 
 interface InviteUserDialogProps {
@@ -27,7 +20,6 @@ interface InviteUserDialogProps {
 export function InviteUserDialog({ onSuccess }: InviteUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
-  const [role, setRole] = useState("agent")
   const [isLoading, setIsLoading] = useState(false)
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -42,7 +34,7 @@ export function InviteUserDialog({ onSuccess }: InviteUserDialogProps) {
         },
         body: JSON.stringify({
           email,
-          role,
+          role: "agent", // Always set role to agent
         }),
       })
 
@@ -53,7 +45,6 @@ export function InviteUserDialog({ onSuccess }: InviteUserDialogProps) {
 
       setOpen(false)
       setEmail("")
-      setRole("agent")
       onSuccess?.()
     } catch (error) {
       console.error("Error inviting user:", error)
@@ -67,16 +58,15 @@ export function InviteUserDialog({ onSuccess }: InviteUserDialogProps) {
       <DialogTrigger asChild>
         <Button>
           <UserPlus className="mr-2 h-4 w-4" />
-          Invite User
+          Invite Agent
         </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>
-            <DialogTitle>Invite User</DialogTitle>
+            <DialogTitle>Invite Agent</DialogTitle>
             <DialogDescription>
-              Invite a new user to join the platform. They will receive an email
-              invitation.
+              Send an invitation email to add a new agent to the platform.
             </DialogDescription>
           </DialogHeader>
           <div className="grid gap-4 py-4">
@@ -90,18 +80,6 @@ export function InviteUserDialog({ onSuccess }: InviteUserDialogProps) {
                 placeholder="Enter their email"
                 required
               />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="role">Role</Label>
-              <Select value={role} onValueChange={setRole}>
-                <SelectTrigger>
-                  <SelectValue />
-                </SelectTrigger>
-                <SelectContent>
-                  <SelectItem value="agent">Agent</SelectItem>
-                  <SelectItem value="customer">Customer</SelectItem>
-                </SelectContent>
-              </Select>
             </div>
           </div>
           <DialogFooter>

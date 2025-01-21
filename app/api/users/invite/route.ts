@@ -21,10 +21,11 @@ export async function POST(request: Request) {
       )
     }
 
-    // Send invite email
+    // Send invite email with redirect to setup profile
     const { data, error } = await supabase.auth.signInWithOtp({
       email,
       options: {
+        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/setup-profile`,
         data: {
           role: role || "agent",
         },
