@@ -1,9 +1,15 @@
+import { redirect } from "next/navigation"
+import { createClient } from "@/utils/supabase/server"
+
 export default async function Home() {
-  return (
-    <>
-      <main className="flex flex-1 flex-col gap-6 px-4">
-        <h2 className="mb-4 text-xl font-medium">Hello World</h2>
-      </main>
-    </>
-  )
+  const supabase = await createClient()
+  const {
+    data: { session },
+  } = await supabase.auth.getSession()
+
+  if (!session) {
+    redirect("/sign-in")
+  }
+
+  redirect("/dashboard")
 }
