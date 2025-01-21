@@ -5,7 +5,8 @@ export const updateSession = async (request: NextRequest) => {
   // This `try/catch` block is only here for the interactive tutorial.
   // Feel free to remove once you have Supabase connected.
   try {
-    // Create an unmodified response
+    console.log("Middleware - Current path:", request.nextUrl.pathname)
+
     let response = NextResponse.next({
       request: {
         headers: request.headers,
@@ -37,7 +38,13 @@ export const updateSession = async (request: NextRequest) => {
 
     // This will refresh session if expired - required for Server Components
     // https://supabase.com/docs/guides/auth/server-side/nextjs
-    const user = await supabase.auth.getUser()
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    console.log(
+      "Middleware - User state:",
+      user ? "Authenticated" : "Not authenticated"
+    )
 
     // Handle unauthenticated users
     if (
@@ -49,13 +56,16 @@ export const updateSession = async (request: NextRequest) => {
       !request.nextUrl.pathname.startsWith("/setup-profile") &&
       !request.nextUrl.pathname.startsWith("/auth")
     ) {
+      console.log("Middleware - Redirecting to sign-in")
       const url = request.nextUrl.clone()
       url.pathname = "/sign-in"
       return NextResponse.redirect(url)
     }
 
+    console.log("Middleware - Allowing access to:", request.nextUrl.pathname)
     return response
   } catch (e) {
+    console.error("Middleware - Error:", e)
     // If you are here, a Supabase client could not be created!
     // This is likely because you have not set up environment variables.
     // Check out http://localhost:3000 for Next Steps.
