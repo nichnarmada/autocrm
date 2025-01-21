@@ -12,9 +12,10 @@ import { useEffect } from "react"
 
 interface SignUpFormProps {
   messageParams: Message
+  onSubmit: (formData: FormData) => Promise<void>
 }
 
-export function SignUpForm({ messageParams }: SignUpFormProps) {
+export function SignUpForm({ messageParams, onSubmit }: SignUpFormProps) {
   const { toast } = useToast()
 
   useEffect(() => {
