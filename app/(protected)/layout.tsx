@@ -64,10 +64,11 @@ export default async function ProtectedLayout({
 }) {
   const supabase = await createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
 
-  if (!session) {
+  if (error || !user) {
     redirect("/sign-in")
   }
 
@@ -75,7 +76,7 @@ export default async function ProtectedLayout({
   const { data: profile } = await supabase
     .from("profiles")
     .select("*")
-    .eq("id", session.user.id)
+    .eq("id", user.id)
     .single()
 
   const userRole = profile?.role || "customer"

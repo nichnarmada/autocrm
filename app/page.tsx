@@ -4,10 +4,11 @@ import { createClient } from "@/utils/supabase/server"
 export default async function Home() {
   const supabase = await createClient()
   const {
-    data: { session },
-  } = await supabase.auth.getSession()
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
 
-  if (!session) {
+  if (error || !user) {
     redirect("/sign-in")
   }
 
