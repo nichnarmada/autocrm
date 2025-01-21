@@ -4,10 +4,10 @@
 
 ### Authentication
 
-- [ ] Basic Supabase Auth
-  - [ ] Login page
-  - [ ] Register page
-  - [ ] Protected routes
+- [x] Basic Supabase Auth
+  - [x] Login page
+  - [x] Register page
+  - [x] Protected routes
 
 ### Ticket System
 
