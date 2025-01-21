@@ -29,7 +29,10 @@ export function LoginForm({ messageParams, onSubmit }: LoginFormProps) {
 
   return (
     <>
-      <form action={onSubmit} className="space-y-4">
+      <form
+        action={onSubmit}
+        className="mx-auto w-full max-w-lg space-y-6 px-4"
+      >
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input

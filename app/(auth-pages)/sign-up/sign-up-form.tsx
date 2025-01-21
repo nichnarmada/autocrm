@@ -28,7 +28,7 @@ export function SignUpForm({ messageParams }: SignUpFormProps) {
 
   return (
     <>
-      <form className="space-y-4">
+      <form className="mx-auto w-full max-w-lg space-y-6 px-4">
         <div className="space-y-2">
           <Label htmlFor="email">Email</Label>
           <Input

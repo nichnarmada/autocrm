@@ -44,15 +44,13 @@ export default function Login({ searchParams }: SearchParamsProps) {
   }
 
   return (
-    <div className="relative flex flex-col items-center justify-center px-4">
-      <div className="w-full max-w-sm">
-        <div className="mb-8 text-center">
-          <h1 className="mb-2 text-2xl font-bold">ChatGenius</h1>
-          <p className="text-muted-foreground">Sign in to your account</p>
-        </div>
-
-        <LoginForm messageParams={message} onSubmit={signIn} />
+    <div className="w-full max-w-xl space-y-8">
+      <div className="text-center">
+        <h1 className="text-3xl font-bold tracking-tight">AutoCRM</h1>
+        <p className="mt-3 text-muted-foreground">Sign in to your account</p>
       </div>
+
+      <LoginForm messageParams={message} onSubmit={signIn} />
     </div>
   )
 }

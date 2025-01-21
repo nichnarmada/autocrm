@@ -59,22 +59,17 @@ export async function middleware(request: NextRequest) {
 
   // If user is authenticated and making a request to the app
   if (user && !request.nextUrl.pathname.startsWith("/api")) {
-    // Check if profile exists and is set up using admin client
+    // Check if profile exists using admin client
     const { data: profile } = await adminClient
       .from("profiles")
       .select("*")
       .eq("id", user.id)
       .single()
 
-    // If profile doesn't exist or is not set up, redirect to setup-profile
-    if (
-      (!profile || profile.is_profile_setup === false) &&
-      !request.nextUrl.pathname.startsWith("/setup-profile") &&
-      !request.nextUrl.pathname.startsWith("/auth")
-    ) {
-      const url = request.nextUrl.clone()
-      url.pathname = "/setup-profile"
-      return NextResponse.redirect(url)
+    // If no profile exists, something went wrong
+    if (!profile) {
+      // Handle error or redirect to error page
+      return NextResponse.redirect(new URL("/error", request.url))
     }
 
     // Update session
