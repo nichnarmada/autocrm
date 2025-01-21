@@ -3,11 +3,9 @@ import { redirect } from "next/navigation"
 import {
   LayoutDashboard,
   Ticket,
-  // Users,
-  // Settings,
-  // Building2,
-  // MessageSquare,
-  // FileText,
+  Users,
+  Settings,
+  Building2,
 } from "lucide-react"
 import { SidebarProvider } from "@/components/ui/sidebar"
 import { AppSidebar, SidebarItem } from "@/components/app-sidebar"
@@ -25,36 +23,24 @@ const sidebarItems: SidebarItem[] = [
     icon: Ticket,
     roles: ["admin", "agent", "customer"],
   },
-  // {
-  //   href: "/teams",
-  //   label: "Teams",
-  //   icon: Building2,
-  //   roles: ["admin"],
-  // },
-  // {
-  //   href: "/users",
-  //   label: "Users",
-  //   icon: Users,
-  //   roles: ["admin"],
-  // },
-  // {
-  //   href: "/knowledge-base",
-  //   label: "Knowledge Base",
-  //   icon: FileText,
-  //   roles: ["admin", "agent", "customer"],
-  // },
-  // {
-  //   href: "/chat",
-  //   label: "Chat",
-  //   icon: MessageSquare,
-  //   roles: ["admin", "agent", "customer"],
-  // },
-  // {
-  //   href: "/settings",
-  //   label: "Settings",
-  //   icon: Settings,
-  //   roles: ["admin", "agent", "customer"],
-  // },
+  {
+    href: "/teams",
+    label: "Teams",
+    icon: Building2,
+    roles: ["admin"],
+  },
+  {
+    href: "/users",
+    label: "Users",
+    icon: Users,
+    roles: ["admin"],
+  },
+  {
+    href: "/settings",
+    label: "Settings",
+    icon: Settings,
+    roles: ["admin", "agent", "customer"],
+  },
 ]
 
 export default async function ProtectedLayout({
