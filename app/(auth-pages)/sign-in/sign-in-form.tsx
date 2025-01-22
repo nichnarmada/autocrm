@@ -9,7 +9,7 @@ import { signInAction } from "@/app/actions"
 import Link from "next/link"
 import { useSearchParams } from "next/navigation"
 
-export function LoginForm() {
+function ErrorDisplay() {
   const searchParams = useSearchParams()
   const error = searchParams.get("error")
   const success = searchParams.get("success")
@@ -23,6 +23,10 @@ export function LoginForm() {
         ? { message }
         : { message: "" }
 
+  return <FormMessage message={messageParams} />
+}
+
+export function LoginForm() {
   return (
     <>
       <form
@@ -63,7 +67,7 @@ export function LoginForm() {
           Sign in
         </SubmitButton>
 
-        <FormMessage message={messageParams} />
+        <ErrorDisplay />
 
         <p className="text-center text-sm text-muted-foreground">
           Don&apos;t have an account?{" "}
