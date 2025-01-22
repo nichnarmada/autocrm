@@ -3,7 +3,9 @@ import { NextResponse, type NextRequest } from "next/server"
 
 export async function middleware(request: NextRequest) {
   let supabaseResponse = NextResponse.next({
-    request,
+    request: {
+      headers: request.headers,
+    },
   })
 
   const supabase = createServerClient(
@@ -15,39 +17,22 @@ export async function middleware(request: NextRequest) {
           return request.cookies.getAll()
         },
         setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
+          cookiesToSet.forEach(({ name, value, options }) => {
             request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
+            supabaseResponse.cookies.set({
+              name,
+              value,
+              ...options,
+              sameSite: "lax",
+              secure: process.env.NODE_ENV === "production",
+            })
           })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
         },
       },
-    }
-  )
-
-  // Create a service role client for admin operations
-  const adminClient = createServerClient(
-    process.env.NEXT_PUBLIC_SUPABASE_URL!,
-    process.env.SUPABASE_SERVICE_ROLE_KEY!,
-    {
-      cookies: {
-        getAll() {
-          return request.cookies.getAll()
-        },
-        setAll(cookiesToSet) {
-          cookiesToSet.forEach(({ name, value, options }) =>
-            request.cookies.set(name, value)
-          )
-          supabaseResponse = NextResponse.next({
-            request,
-          })
-          cookiesToSet.forEach(({ name, value, options }) =>
-            supabaseResponse.cookies.set(name, value, options)
-          )
+      global: {
+        headers: {
+          Accept: "application/json",
+          "Content-Type": "application/json",
         },
       },
     }
@@ -59,28 +44,6 @@ export async function middleware(request: NextRequest) {
 
   // If user is authenticated and making a request to the app
   if (user && !request.nextUrl.pathname.startsWith("/api")) {
-    // Check if profile exists using admin client
-    const { data: profile } = await adminClient
-      .from("profiles")
-      .select("*")
-      .eq("id", user.id)
-      .single()
-
-    // If no profile exists, something went wrong
-    if (!profile) {
-      // Handle error or redirect to error page
-      return NextResponse.redirect(new URL("/error", request.url))
-    }
-
-    // Update session
-    await supabase.from("user_sessions").upsert(
-      { user_id: user.id },
-      {
-        onConflict: "user_id",
-        ignoreDuplicates: false,
-      }
-    )
-
     // Get user's role from profiles
     const { data: role } = await supabase
       .from("profiles")

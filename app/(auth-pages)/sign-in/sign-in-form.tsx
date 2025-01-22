@@ -1,36 +1,32 @@
 "use client"
 
-import { FormMessage, Message } from "@/components/form-message"
+import { FormMessage } from "@/components/form-message"
 import { SubmitButton } from "@/components/submit-button"
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { Toaster } from "@/components/ui/toaster"
-import { useToast } from "@/hooks/use-toast"
+import { signInAction } from "@/app/actions"
 import Link from "next/link"
-import { useEffect } from "react"
+import { useSearchParams } from "next/navigation"
 
-interface LoginFormProps {
-  messageParams: Message
-  onSubmit: (formData: FormData) => Promise<void>
-}
+export function LoginForm() {
+  const searchParams = useSearchParams()
+  const error = searchParams.get("error")
+  const success = searchParams.get("success")
+  const message = searchParams.get("message")
 
-export function LoginForm({ messageParams, onSubmit }: LoginFormProps) {
-  const { toast } = useToast()
-
-  // Show error toast if there's an error
-  useEffect(() => {
-    if ("error" in messageParams) {
-      toast({
-        title: "Error",
-        description: messageParams.error,
-      })
-    }
-  }, [messageParams, toast])
+  const messageParams = error
+    ? { error }
+    : success
+      ? { success }
+      : message
+        ? { message }
+        : { message: "" }
 
   return (
     <>
       <form
-        action={onSubmit}
+        action={signInAction}
         className="mx-auto w-full max-w-lg space-y-6 px-4"
       >
         <div className="space-y-2">
