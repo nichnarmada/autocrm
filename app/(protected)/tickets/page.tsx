@@ -1,96 +1,60 @@
-"use client"
+import { createClient } from "@/utils/supabase/server"
+import { TicketsListView } from "./tickets-list-view"
 
-import { useEffect, useState } from "react"
-import { createClient } from "@/utils/supabase/client"
-import { TicketList } from "@/components/tickets/ticket-list"
-import { CreateTicketButton } from "@/components/tickets/create-ticket-button"
-import type { Database } from "@/types/supabase"
-import { redirect } from "next/navigation"
-
-type Tables = Database["public"]["Tables"]
-type Ticket = Tables["tickets"]["Row"] & {
-  assigned_to: Tables["profiles"]["Row"] | null
-  created_by: Tables["profiles"]["Row"] | null
-  team_id: Tables["teams"]["Row"] | null
+type TicketPageProps = {
+  params: Promise<{ tab?: string; search?: string }>
 }
 
-export default function TicketsPage() {
-  const [tickets, setTickets] = useState<Ticket[]>([])
-  const [isLoading, setIsLoading] = useState(true)
-  const supabase = createClient()
+export default async function TicketsPage({ params }: TicketPageProps) {
+  const searchParams = await params
 
-  const fetchTickets = async () => {
-    try {
-      const response = await fetch("/api/tickets")
-      const json = await response.json()
-      console.log("API Response:", json)
+  const supabase = await createClient()
 
-      if (json.success) {
-        setTickets(json.data)
-      } else {
-        console.error("Error fetching tickets:", json.error)
-      }
-    } catch (error) {
-      console.error("Error fetching tickets:", error)
-    } finally {
-      setIsLoading(false)
-    }
+  const {
+    data: { user },
+    error,
+  } = await supabase.auth.getUser()
+  if (error || !user) {
+    return null
   }
 
-  useEffect(() => {
-    // Check authentication
-    const checkUser = async () => {
-      const {
-        data: { user },
-        error,
-      } = await supabase.auth.getUser()
-      if (error || !user) {
-        redirect("/sign-in")
-      }
-    }
+  try {
+    const [ticketsResponse, teamsResponse, agentsResponse] = await Promise.all([
+      supabase
+        .from("tickets")
+        .select(
+          `
+          *,
+          assigned_to:profiles(*),
+          created_by:profiles(*),
+          customer_id:profiles(*),
+          team_id:teams(*)
+        `
+        )
+        .order("created_at", { ascending: false }),
+      supabase.from("teams").select("*").order("name"),
+      supabase
+        .from("profiles")
+        .select("*")
+        .in("role", ["admin", "agent"])
+        .order("full_name"),
+    ])
 
-    // Initial fetch
-    const init = async () => {
-      await checkUser()
-      await fetchTickets()
-    }
+    const tickets = ticketsResponse.data || []
+    const teams = teamsResponse.data || []
+    const agents = agentsResponse.data || []
 
-    init()
-
-    // Set up real-time subscription
-    const channel = supabase
-      .channel("tickets-channel")
-      .on(
-        "postgres_changes",
-        {
-          event: "*", // Listen to all changes (INSERT, UPDATE, DELETE)
-          schema: "public",
-          table: "tickets",
-        },
-        (payload) => {
-          // Refetch tickets when any change occurs
-          fetchTickets()
-        }
-      )
-      .subscribe()
-
-    // Cleanup subscription
-    return () => {
-      supabase.removeChannel(channel)
-    }
-  }, [])
-
-  if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <TicketsListView
+        tickets={tickets}
+        teams={teams}
+        agents={agents}
+        userId={user.id}
+        searchParams={searchParams}
+      />
+    )
+  } catch (error) {
+    console.error("[Page] Error fetching data:", error)
+    return <div>Error loading tickets</div>
   }
-
-  return (
-    <div>
-      <div className="mb-6 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Tickets</h1>
-        <CreateTicketButton />
-      </div>
-      <TicketList tickets={tickets} />
-    </div>
-  )
 }
