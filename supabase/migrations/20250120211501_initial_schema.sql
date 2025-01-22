@@ -164,9 +164,26 @@ create policy "Admins can view all profiles"
     )
   );
 
+create policy "Admins can manage all profiles"
+  on profiles for all
+  using (
+    exists (
+      select 1 from profiles
+      where id = auth.uid()
+      and role = 'admin'
+    )
+  );
+
+-- Teams policies
 create policy "Team members can view their teams"
   on teams for select
-  using (true);
+  using (
+    exists (
+      select 1 from team_members
+      where team_members.team_id = teams.id
+      and team_members.user_id = auth.uid()
+    )
+  );
 
 create policy "Admins can manage teams"
   on teams for all
@@ -181,10 +198,10 @@ create policy "Admins can manage teams"
 create policy "Team members can view team members"
   on team_members for select
   using (
-    auth.uid() = user_id or
-    auth.uid() in (
-      select created_by from tickets
+    exists (
+      select 1 from team_members
       where team_id = team_members.team_id
+      and user_id = auth.uid()
     )
   );
 
