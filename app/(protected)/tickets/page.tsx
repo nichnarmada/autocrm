@@ -10,6 +10,7 @@ import { redirect } from "next/navigation"
 type Tables = Database["public"]["Tables"]
 type Ticket = Tables["tickets"]["Row"] & {
   assigned_to: Tables["profiles"]["Row"] | null
+  created_by: Tables["profiles"]["Row"] | null
   team_id: Tables["teams"]["Row"] | null
 }
 
@@ -20,12 +21,15 @@ export default function TicketsPage() {
 
   const fetchTickets = async () => {
     try {
-      const { data } = await supabase
-        .from("tickets")
-        .select("*, assigned_to:profiles(*), team_id:teams(*)")
-        .order("created_at", { ascending: false })
+      const response = await fetch("/api/tickets")
+      const json = await response.json()
+      console.log("API Response:", json)
 
-      if (data) setTickets(data as Ticket[])
+      if (json.success) {
+        setTickets(json.data)
+      } else {
+        console.error("Error fetching tickets:", json.error)
+      }
     } catch (error) {
       console.error("Error fetching tickets:", error)
     } finally {
@@ -63,7 +67,7 @@ export default function TicketsPage() {
           schema: "public",
           table: "tickets",
         },
-        () => {
+        (payload) => {
           // Refetch tickets when any change occurs
           fetchTickets()
         }

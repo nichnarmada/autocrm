@@ -25,7 +25,22 @@ language plpgsql
 as $$
 declare
   profile_exists boolean;
+  user_role user_role;
 begin
+  -- Get the role from metadata, cast it properly to user_role enum
+  user_role := coalesce(
+    (new.raw_user_meta_data->>'role')::user_role,
+    'customer'::user_role
+  );
+
+  -- Set the role in JWT claim
+  update auth.users 
+  set raw_app_meta_data = 
+    coalesce(raw_app_meta_data, '{}'::jsonb) || 
+    json_build_object('role', user_role::text)::jsonb
+  where id = new.id;
+
+  -- Check if profile exists
   select exists (
     select 1 from public.profiles where id = new.id
   ) into profile_exists;
@@ -49,10 +64,7 @@ begin
       ),
       new.raw_user_meta_data->>'avatar_url',
       new.email,
-      coalesce(
-        (new.raw_user_meta_data->>'role')::user_role,
-        'customer'
-      ),
+      user_role,
       false,
       now(),
       now()
@@ -62,6 +74,16 @@ begin
   return new;
 end;
 $$;
+
+-- Grant necessary permissions
+grant usage on schema auth to postgres, authenticated, service_role;
+grant all on auth.users to postgres, authenticated, service_role;
+grant execute on function handle_new_user to postgres, authenticated, service_role;
+
+-- Create auth.users trigger
+create trigger on_auth_user_created
+  after insert on auth.users
+  for each row execute function handle_new_user();
 
 -- Create tables
 create table profiles (
@@ -157,21 +179,13 @@ create policy "Users can update own profile"
 create policy "Admins can view all profiles"
   on profiles for select
   using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'admin'
-    )
+    (auth.jwt() ->> 'role')::text = 'admin'
   );
 
 create policy "Admins can manage all profiles"
   on profiles for all
   using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'admin'
-    )
+    (auth.jwt() ->> 'role')::text = 'admin'
   );
 
 -- Teams policies
@@ -188,11 +202,7 @@ create policy "Team members can view their teams"
 create policy "Admins can manage teams"
   on teams for all
   using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'admin'
-    )
+    (auth.jwt() ->> 'role')::text = 'admin'
   );
 
 create policy "Team members can view team members"
@@ -208,11 +218,7 @@ create policy "Team members can view team members"
 create policy "Admins can manage team members"
   on team_members for all
   using (
-    exists (
-      select 1 from profiles
-      where id = auth.uid()
-      and role = 'admin'
-    )
+    (auth.jwt() ->> 'role')::text = 'admin'
   );
 
 create policy "Users can view assigned tickets"
