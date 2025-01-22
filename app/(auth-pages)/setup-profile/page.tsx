@@ -2,12 +2,12 @@ import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { SetupProfileForm } from "./setup-profile-form"
 
-export default async function SetupProfile({
-  searchParams: rawSearchParams,
-}: {
-  searchParams: { code?: string; error?: string; success?: string }
-}) {
-  const searchParams = await Promise.resolve(rawSearchParams)
+type SetupProfileProps = {
+  params: Promise<{ code?: string; error?: string; success?: string }>
+}
+
+export default async function SetupProfile({ params }: SetupProfileProps) {
+  const searchParams = await params
   const supabase = await createClient()
 
   // If we have a code in the URL, exchange it for a session
