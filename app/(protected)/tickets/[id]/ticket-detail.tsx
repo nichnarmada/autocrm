@@ -4,12 +4,10 @@ import { useEffect, useState } from "react"
 import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { Badge } from "@/components/ui/badge"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
@@ -21,6 +19,7 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
+import { CommentSection } from "./comment-section"
 import type { Database } from "@/types/supabase"
 
 type Tables = Database["public"]["Tables"]
@@ -126,9 +125,9 @@ export function TicketDetail({ id }: TicketDetailProps) {
   }
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ticket Details</h1>
+    <div className="container mx-auto flex h-[calc(100vh-4rem)] flex-col p-4">
+      <div className="mb-4 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Ticket #{id}</h1>
         <div className="flex items-center gap-2">
           <Select
             value={ticket.status}
@@ -170,70 +169,73 @@ export function TicketDetail({ id }: TicketDetailProps) {
         </div>
       </div>
 
-      <Card>
-        <CardHeader>
-          <div className="flex items-start justify-between">
-            <div>
-              <CardTitle>{ticket.title}</CardTitle>
-              <CardDescription>
-                Created by {ticket.created_by?.full_name} •{" "}
-                {ticket.created_at &&
-                  new Date(ticket.created_at).toLocaleString()}
-              </CardDescription>
+      <div className="mb-4 flex-grow overflow-auto">
+        <Card>
+          <CardHeader>
+            <div className="flex items-start justify-between">
+              <div>
+                <CardTitle>{ticket.title}</CardTitle>
+                <CardDescription>
+                  Created by {ticket.created_by?.full_name} •{" "}
+                  {ticket.created_at &&
+                    new Date(ticket.created_at).toLocaleString()}
+                </CardDescription>
+              </div>
+              <div className="flex gap-2">
+                <Badge
+                  variant={ticket.status === "new" ? "default" : "secondary"}
+                >
+                  {ticket.status}
+                </Badge>
+                <Badge
+                  variant={
+                    ticket.priority === "urgent"
+                      ? "destructive"
+                      : ticket.priority === "high"
+                        ? "default"
+                        : "secondary"
+                  }
+                >
+                  {ticket.priority}
+                </Badge>
+              </div>
             </div>
-            <div className="flex gap-2">
-              <Badge
-                variant={ticket.status === "new" ? "default" : "secondary"}
-              >
-                {ticket.status}
-              </Badge>
-              <Badge
-                variant={
-                  ticket.priority === "urgent"
-                    ? "destructive"
-                    : ticket.priority === "high"
-                      ? "default"
-                      : "secondary"
-                }
-              >
-                {ticket.priority}
-              </Badge>
+          </CardHeader>
+          <CardContent className="space-y-4">
+            <div className="prose dark:prose-invert">
+              <p>{ticket.description}</p>
             </div>
-          </div>
-        </CardHeader>
-        <CardContent className="space-y-4">
-          <div className="prose dark:prose-invert">
-            <p>{ticket.description}</p>
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="text-sm text-muted-foreground">Assigned To</div>
-            <div>
-              {ticket.assigned_to ? (
-                ticket.assigned_to.full_name
-              ) : (
-                <span className="text-muted-foreground">Unassigned</span>
-              )}
+            <div className="flex flex-col gap-2">
+              <div className="text-sm text-muted-foreground">Assigned To</div>
+              <div>
+                {ticket.assigned_to ? (
+                  ticket.assigned_to.full_name
+                ) : (
+                  <span className="text-muted-foreground">Unassigned</span>
+                )}
+              </div>
             </div>
-          </div>
 
-          <div className="flex flex-col gap-2">
-            <div className="text-sm text-muted-foreground">Team</div>
-            <div>
-              {ticket.team_id ? (
-                ticket.team_id.name
-              ) : (
-                <span className="text-muted-foreground">No team assigned</span>
-              )}
+            <div className="flex flex-col gap-2">
+              <div className="text-sm text-muted-foreground">Team</div>
+              <div>
+                {ticket.team_id ? (
+                  ticket.team_id.name
+                ) : (
+                  <span className="text-muted-foreground">
+                    No team assigned
+                  </span>
+                )}
+              </div>
             </div>
-          </div>
-        </CardContent>
-        <CardFooter>
-          <Button variant="outline">Add Comment</Button>
-        </CardFooter>
-      </Card>
+          </CardContent>
+        </Card>
+      </div>
 
-      {/* Comments section will go here */}
+      <div className="h-[40vh]">
+        <CommentSection ticketId={id} />
+      </div>
     </div>
   )
 }

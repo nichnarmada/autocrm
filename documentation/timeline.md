@@ -11,19 +11,19 @@
 
 ### Ticket System
 
-- [ ] Basic CRUD
-  - [ ] Create tickets
-  - [ ] View ticket list
-  - [ ] Update ticket status
-  - [ ] Delete tickets
-- [ ] Simple assignment system
-  - [ ] Assign to agent
-  - [ ] Assign to team
+- [x] Basic CRUD
+  - [x] Create tickets
+  - [x] View ticket list
+  - [x] Update ticket status
+  - [x] Delete tickets
+- [x] Simple assignment system
+  - [x] Assign to agent
+  - [x] Assign to team
 
 ### Team Management
 
 - [ ] Basic team structure
-  - [ ] Create teams
+  - [x] Create teams
   - [ ] Add members
   - [ ] Assign roles
 

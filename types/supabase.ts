@@ -16,6 +16,7 @@ export type Database = {
           email: string | null
           full_name: string | null
           id: string
+          is_profile_setup: boolean
           role: Database["public"]["Enums"]["user_role"]
           updated_at: string | null
         }
@@ -25,6 +26,7 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id: string
+          is_profile_setup?: boolean
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
@@ -34,35 +36,125 @@ export type Database = {
           email?: string | null
           full_name?: string | null
           id?: string
+          is_profile_setup?: boolean
           role?: Database["public"]["Enums"]["user_role"]
           updated_at?: string | null
         }
         Relationships: []
+      }
+      routing_rules: {
+        Row: {
+          category: Database["public"]["Enums"]["ticket_category"] | null
+          conditions: Json | null
+          created_at: string | null
+          id: string
+          priority: Database["public"]["Enums"]["ticket_priority"] | null
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          category?: Database["public"]["Enums"]["ticket_category"] | null
+          conditions?: Json | null
+          created_at?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          category?: Database["public"]["Enums"]["ticket_category"] | null
+          conditions?: Json | null
+          created_at?: string | null
+          id?: string
+          priority?: Database["public"]["Enums"]["ticket_priority"] | null
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "routing_rules_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      team_capacity: {
+        Row: {
+          agent_id: string
+          created_at: string | null
+          current_tickets: number
+          id: string
+          is_available: boolean
+          last_assigned: string | null
+          max_tickets: number
+          team_id: string
+          updated_at: string | null
+        }
+        Insert: {
+          agent_id: string
+          created_at?: string | null
+          current_tickets?: number
+          id?: string
+          is_available?: boolean
+          last_assigned?: string | null
+          max_tickets?: number
+          team_id: string
+          updated_at?: string | null
+        }
+        Update: {
+          agent_id?: string
+          created_at?: string | null
+          current_tickets?: number
+          id?: string
+          is_available?: boolean
+          last_assigned?: string | null
+          max_tickets?: number
+          team_id?: string
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_capacity_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_capacity_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+        ]
       }
       team_members: {
         Row: {
           created_at: string | null
           id: string
           role: string
-          team_id: string | null
+          team_id: string
           updated_at: string | null
-          user_id: string | null
+          user_id: string
         }
         Insert: {
           created_at?: string | null
           id?: string
           role?: string
-          team_id?: string | null
+          team_id: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id: string
         }
         Update: {
           created_at?: string | null
           id?: string
           role?: string
-          team_id?: string | null
+          team_id?: string
           updated_at?: string | null
-          user_id?: string | null
+          user_id?: string
         }
         Relationships: [
           {
@@ -100,29 +192,32 @@ export type Database = {
       }
       ticket_comments: {
         Row: {
+          attachments: Json | null
           content: string
           created_at: string | null
           id: string
           is_internal: boolean | null
-          ticket_id: string | null
+          ticket_id: string
           updated_at: string | null
           user_id: string | null
         }
         Insert: {
+          attachments?: Json | null
           content: string
           created_at?: string | null
           id?: string
           is_internal?: boolean | null
-          ticket_id?: string | null
+          ticket_id: string
           updated_at?: string | null
           user_id?: string | null
         }
         Update: {
+          attachments?: Json | null
           content?: string
           created_at?: string | null
           id?: string
           is_internal?: boolean | null
-          ticket_id?: string | null
+          ticket_id?: string
           updated_at?: string | null
           user_id?: string | null
         }
@@ -134,6 +229,13 @@ export type Database = {
             referencedRelation: "tickets"
             referencedColumns: ["id"]
           },
+          {
+            foreignKeyName: "ticket_comments_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
         ]
       }
       tickets: {
@@ -142,6 +244,8 @@ export type Database = {
           category: Database["public"]["Enums"]["ticket_category"]
           created_at: string | null
           created_by: string | null
+          created_on_behalf: boolean | null
+          customer_id: string | null
           description: string | null
           id: string
           priority: Database["public"]["Enums"]["ticket_priority"]
@@ -155,6 +259,8 @@ export type Database = {
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null
           created_by?: string | null
+          created_on_behalf?: boolean | null
+          customer_id?: string | null
           description?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
@@ -168,6 +274,8 @@ export type Database = {
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null
           created_by?: string | null
+          created_on_behalf?: boolean | null
+          customer_id?: string | null
           description?: string | null
           id?: string
           priority?: Database["public"]["Enums"]["ticket_priority"]
@@ -177,6 +285,13 @@ export type Database = {
           updated_at?: string | null
         }
         Relationships: [
+          {
+            foreignKeyName: "tickets_customer_id_fkey"
+            columns: ["customer_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
           {
             foreignKeyName: "tickets_team_id_fkey"
             columns: ["team_id"]
@@ -191,7 +306,20 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      [_ in never]: never
+      find_suitable_agent: {
+        Args: {
+          p_team_id: string
+        }
+        Returns: string
+      }
+      find_suitable_team: {
+        Args: {
+          p_category: Database["public"]["Enums"]["ticket_category"]
+          p_priority: Database["public"]["Enums"]["ticket_priority"]
+          p_metadata: Json
+        }
+        Returns: string
+      }
     }
     Enums: {
       ticket_category:
