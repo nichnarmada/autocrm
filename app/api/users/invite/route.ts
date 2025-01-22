@@ -30,24 +30,27 @@ export async function POST(request: Request) {
       )
     }
 
+    // Create admin client for invite
+    const adminAuthClient = await createClient()
+
     // Send invitation with redirect to setup profile
-    const { error } = await supabase.auth.signInWithOtp({
+    const { data, error } = await adminAuthClient.auth.admin.inviteUserByEmail(
       email,
-      options: {
+      {
         data: {
           role: "agent",
           invited_by: user.id,
         },
-        emailRedirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/setup-profile`,
-      },
-    })
+        redirectTo: `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/setup-profile`,
+      }
+    )
 
     if (error) {
       console.error("Error sending invite:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
-    return NextResponse.json({ success: true })
+    return NextResponse.json({ success: true, data })
   } catch (error) {
     console.error("Error in invite API:", error)
     return NextResponse.json(

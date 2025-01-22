@@ -137,34 +137,53 @@ export async function setupProfileAction(formData: FormData) {
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
 
-  if (!fullName || !password || !confirmPassword) {
-    return encodedRedirect("error", "/setup-profile", "All fields are required")
-  }
-
-  if (password !== confirmPassword) {
-    return encodedRedirect("error", "/setup-profile", "Passwords do not match")
+  if (!fullName) {
+    return encodedRedirect("error", "/setup-profile", "Full name is required")
   }
 
   try {
-    // Update the user's password
-    const { error: updateError } = await supabase.auth.updateUser({
-      password,
-    })
-
-    if (updateError) throw updateError
-
     // Get the current user
     const {
       data: { user },
     } = await supabase.auth.getUser()
     if (!user) throw new Error("No user found")
 
+    // Check if user was invited
+    const isInvitedUser =
+      user.user_metadata?.role === "agent" && user.user_metadata?.invited_by
+
+    // If invited user, validate and update password
+    if (isInvitedUser) {
+      if (!password || !confirmPassword) {
+        return encodedRedirect(
+          "error",
+          "/setup-profile",
+          "Password is required for invited users"
+        )
+      }
+
+      if (password !== confirmPassword) {
+        return encodedRedirect(
+          "error",
+          "/setup-profile",
+          "Passwords do not match"
+        )
+      }
+
+      // Update the user's password
+      const { error: updateError } = await supabase.auth.updateUser({
+        password,
+      })
+
+      if (updateError) throw updateError
+    }
+
     // Update the user's profile
     const { error: profileError } = await supabase
       .from("profiles")
       .update({
         full_name: fullName,
-        role: "agent", // Ensure role is set to agent
+        is_profile_setup: true,
       })
       .eq("id", user.id)
 
