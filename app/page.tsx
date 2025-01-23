@@ -1,12 +1,13 @@
 "use client"
 
 import Link from "next/link"
-import { useEffect } from "react"
+import { useEffect, useState } from "react"
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 
 export default function HomePage() {
   const router = useRouter()
+  const [isProcessingInvite, setIsProcessingInvite] = useState(false)
 
   useEffect(() => {
     // Check for hash parameters
@@ -15,6 +16,7 @@ export default function HomePage() {
 
     const params = new URLSearchParams(hash)
     if (params.get("type") === "invite") {
+      setIsProcessingInvite(true)
       // Get tokens from hash
       const accessToken = params.get("access_token")
       const refreshToken = params.get("refresh_token")
@@ -35,7 +37,12 @@ export default function HomePage() {
               window.location.replace(setupUrl.toString())
             } else {
               console.error("Failed to set session:", error)
+              setIsProcessingInvite(false)
             }
+          })
+          .catch((error) => {
+            console.error("Error setting session:", error)
+            setIsProcessingInvite(false)
           })
         return
       }
@@ -55,6 +62,21 @@ export default function HomePage() {
 
     checkAuth()
   }, [router])
+
+  if (isProcessingInvite) {
+    return (
+      <main className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
+        <div className="w-full max-w-3xl space-y-8 text-center">
+          <h2 className="text-2xl font-semibold tracking-tight">
+            Setting up your account...
+          </h2>
+          <p className="text-muted-foreground">
+            Please wait while we process your invitation.
+          </p>
+        </div>
+      </main>
+    )
+  }
 
   return (
     <main className="flex min-h-screen flex-col items-center justify-center bg-background p-6">
