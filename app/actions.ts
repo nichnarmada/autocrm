@@ -144,71 +144,37 @@ export const signOutAction = async () => {
 
 export async function setupProfileAction(formData: FormData) {
   const supabase = await createClient()
-  const fullName = formData.get("fullName") as string
-  const password = formData.get("password") as string
-  const confirmPassword = formData.get("confirmPassword") as string
+
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+
+  if (!user) {
+    return { error: "Not authenticated" }
+  }
+
+  const displayName = formData.get("displayName") as string
   const isInvited = formData.get("isInvited") === "true"
 
-  if (!fullName) {
-    return encodedRedirect("error", "/setup-profile", "Full name is required")
+  if (!displayName) {
+    return { error: "Display name is required" }
   }
 
-  try {
-    const {
-      data: { user },
-    } = await supabase.auth.getUser()
+  // Update user profile
+  const { error: updateError } = await supabase
+    .from("profiles")
+    .update({
+      full_name: displayName,
+      is_profile_setup: true,
+      role: isInvited ? "agent" : "customer",
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", user.id)
 
-    if (!user) {
-      throw new Error("No user found")
-    }
-
-    // For invited users, handle password setup
-    if (isInvited) {
-      if (!password || !confirmPassword) {
-        return encodedRedirect(
-          "error",
-          "/setup-profile",
-          "Password is required for invited users"
-        )
-      }
-
-      if (password !== confirmPassword) {
-        return encodedRedirect(
-          "error",
-          "/setup-profile",
-          "Passwords do not match"
-        )
-      }
-
-      const { error: passwordError } = await supabase.auth.updateUser({
-        password: password,
-      })
-
-      if (passwordError) {
-        return encodedRedirect("error", "/setup-profile", passwordError.message)
-      }
-    }
-
-    // Update profile
-    const { error: profileError } = await supabase
-      .from("profiles")
-      .update({
-        full_name: fullName,
-        is_profile_setup: true,
-      })
-      .eq("id", user.id)
-
-    if (profileError) {
-      return encodedRedirect("error", "/setup-profile", profileError.message)
-    }
-
-    return encodedRedirect("success", "/dashboard", "Profile setup complete")
-  } catch (error) {
-    console.error("Error setting up profile:", error)
-    return encodedRedirect(
-      "error",
-      "/setup-profile",
-      error instanceof Error ? error.message : "Something went wrong"
-    )
+  if (updateError) {
+    console.error("Error updating profile:", updateError)
+    return { error: "Failed to update profile" }
   }
+
+  return { success: true }
 }

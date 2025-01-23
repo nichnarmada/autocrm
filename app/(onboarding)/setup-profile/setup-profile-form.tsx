@@ -1,6 +1,11 @@
 "use client"
 
-import { User } from "@supabase/supabase-js"
+import { useSearchParams, useRouter } from "next/navigation"
+import { setupProfileAction } from "@/app/actions"
+import { Input } from "@/components/ui/input"
+import { Button } from "@/components/ui/button"
+import { Label } from "@/components/ui/label"
+import { createClient } from "@/utils/supabase/client"
 import {
   Card,
   CardContent,
@@ -8,36 +13,82 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
-import { setupProfileAction } from "@/app/actions"
-import { SubmitButton } from "@/components/submit-button"
-import { useRouter } from "next/navigation"
-import { useTransition } from "react"
+import { useState, useEffect } from "react"
 
-interface SetupProfileFormProps {
-  user: User
-  searchParams: {
-    error?: string
-    success?: string
-  }
-  isInvitedUser: boolean
+type FormState = {
+  error?: string
+  success?: string
 }
 
-export function SetupProfileForm({
-  user,
-  searchParams,
-  isInvitedUser,
-}: SetupProfileFormProps) {
+type ActionResult = {
+  error?: string
+  success?: boolean
+}
+
+export function SetupProfileForm() {
   const router = useRouter()
-  const [isPending, startTransition] = useTransition()
+  const searchParams = useSearchParams()
+  const isInvitedUser = searchParams.get("invite") === "true"
+  const [formState, setFormState] = useState<FormState>({})
+  const [isSubmitting, setIsSubmitting] = useState(false)
+
+  // Debug log
+  useEffect(() => {
+    console.log("Setup Profile Form State:", {
+      isInvitedUser,
+      searchParams: Object.fromEntries(searchParams.entries()),
+    })
+  }, [searchParams, isInvitedUser])
 
   async function onSubmit(formData: FormData) {
-    formData.append("isInvited", isInvitedUser.toString())
+    try {
+      setIsSubmitting(true)
+      setFormState({})
 
-    startTransition(async () => {
-      await setupProfileAction(formData)
-    })
+      // If invited user, update password
+      if (isInvitedUser) {
+        const password = formData.get("password") as string
+        const confirmPassword = formData.get("confirmPassword") as string
+
+        if (!password || !confirmPassword) {
+          setFormState({ error: "Password is required for invited users" })
+          return
+        }
+
+        if (password !== confirmPassword) {
+          setFormState({ error: "Passwords do not match" })
+          return
+        }
+
+        const supabase = createClient()
+        const { error } = await supabase.auth.updateUser({ password })
+
+        if (error) {
+          setFormState({ error: error.message })
+          return
+        }
+      }
+
+      // Append isInvited to form data
+      formData.append("isInvited", isInvitedUser.toString())
+
+      // Submit the form
+      const result = (await setupProfileAction(formData)) as ActionResult
+      if (result?.error) {
+        setFormState({ error: result.error })
+      } else {
+        setFormState({ success: "Profile setup complete" })
+        // Redirect to dashboard after successful setup
+        setTimeout(() => {
+          router.push("/dashboard")
+        }, 1000)
+      }
+    } catch (error) {
+      setFormState({ error: "An unexpected error occurred" })
+      console.error("Setup profile error:", error)
+    } finally {
+      setIsSubmitting(false)
+    }
   }
 
   return (
@@ -46,44 +97,34 @@ export function SetupProfileForm({
         <CardTitle>Setup Your Profile</CardTitle>
         <CardDescription>
           {isInvitedUser
-            ? "Welcome! Please set up your agent account to continue."
+            ? "Welcome! Please complete your profile setup and set your password."
             : "Welcome! Please complete your profile setup to continue."}
         </CardDescription>
       </CardHeader>
       <CardContent>
         <form action={onSubmit} className="space-y-4">
           <div className="space-y-2">
-            <Label htmlFor="email">Email</Label>
+            <Label htmlFor="displayName">Display Name</Label>
             <Input
-              id="email"
-              name="email"
-              type="email"
-              value={user.email}
-              disabled
-            />
-          </div>
-
-          <div className="space-y-2">
-            <Label htmlFor="fullName">Full Name</Label>
-            <Input
-              id="fullName"
-              name="fullName"
-              placeholder="Enter your full name"
+              id="displayName"
+              name="displayName"
+              type="text"
               required
+              placeholder="Enter your display name"
             />
           </div>
 
           {isInvitedUser && (
             <>
               <div className="space-y-2">
-                <Label htmlFor="password">Password</Label>
+                <Label htmlFor="password">Set Password</Label>
                 <Input
                   id="password"
                   name="password"
                   type="password"
-                  placeholder="Set your password"
-                  required={isInvitedUser}
-                  minLength={6}
+                  required
+                  minLength={8}
+                  placeholder="Enter your password"
                 />
               </div>
 
@@ -93,28 +134,24 @@ export function SetupProfileForm({
                   id="confirmPassword"
                   name="confirmPassword"
                   type="password"
+                  required
+                  minLength={8}
                   placeholder="Confirm your password"
-                  required={isInvitedUser}
-                  minLength={6}
                 />
               </div>
             </>
           )}
 
-          {searchParams.error && (
-            <div className="text-sm text-red-500">
-              Error: {searchParams.error}
-            </div>
-          )}
-          {searchParams.success && (
-            <div className="text-sm text-green-500">
-              Success: {searchParams.success}
-            </div>
-          )}
+          <Button type="submit" className="w-full" disabled={isSubmitting}>
+            {isSubmitting ? "Setting up profile..." : "Complete Setup"}
+          </Button>
 
-          <SubmitButton className="w-full" pendingText="Setting up profile...">
-            Complete Setup
-          </SubmitButton>
+          {formState.error && (
+            <p className="text-sm text-red-500">{formState.error}</p>
+          )}
+          {formState.success && (
+            <p className="text-sm text-green-500">{formState.success}</p>
+          )}
         </form>
       </CardContent>
     </Card>
