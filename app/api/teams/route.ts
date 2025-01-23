@@ -1,5 +1,10 @@
 import { createClient } from "@/utils/supabase/server"
 import { NextResponse } from "next/server"
+import type { Database } from "@/types/supabase"
+
+type Team = Database["public"]["Tables"]["teams"]["Row"]
+type TeamInsert = Database["public"]["Tables"]["teams"]["Insert"]
+type TeamUpdate = Database["public"]["Tables"]["teams"]["Update"]
 
 export async function GET() {
   try {
@@ -27,13 +32,13 @@ export async function GET() {
       .order("name")
 
     if (error) {
-      console.error("Error fetching teams:", error)
+      console.error("[GET /api/teams] Error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(teams)
   } catch (error) {
-    console.error("Error in teams API:", error)
+    console.error("[GET /api/teams] Server error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -46,20 +51,40 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const json = await request.json()
 
+    // Debug: Check user's profile and role
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+
+    const { data: profile, error: profileError } = await supabase
+      .from("profiles")
+      .select("*")
+      .eq("id", user?.id)
+      .single()
+
+    if (profileError) {
+      console.error("[POST /api/teams] Error fetching profile:", profileError)
+    }
+
+    const teamData: TeamInsert = {
+      name: json.name,
+      description: json.description,
+    }
+
     const { data, error } = await supabase
       .from("teams")
-      .insert([{ name: json.name, description: json.description }])
+      .insert([teamData])
       .select()
       .single()
 
     if (error) {
-      console.error("Error creating team:", error)
+      console.error("[POST /api/teams] Error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error("Error in teams API:", error)
+    console.error("[POST /api/teams] Server error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -71,23 +96,29 @@ export async function PUT(request: Request) {
   try {
     const supabase = await createClient()
     const json = await request.json()
+
     const { id, name, description } = json
+    const updateData: TeamUpdate = {
+      name,
+      description,
+      updated_at: new Date().toISOString(),
+    }
 
     const { data, error } = await supabase
       .from("teams")
-      .update({ name, description, updated_at: new Date().toISOString() })
+      .update(updateData)
       .eq("id", id)
       .select()
       .single()
 
     if (error) {
-      console.error("Error updating team:", error)
+      console.error("[PUT /api/teams] Error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json(data)
   } catch (error) {
-    console.error("Error in teams API:", error)
+    console.error("[PUT /api/teams] Server error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }
@@ -102,6 +133,7 @@ export async function DELETE(request: Request) {
     const id = searchParams.get("id")
 
     if (!id) {
+      console.error("[DELETE /api/teams] Error: No team ID provided")
       return NextResponse.json(
         { error: "Team ID is required" },
         { status: 400 }
@@ -111,13 +143,13 @@ export async function DELETE(request: Request) {
     const { error } = await supabase.from("teams").delete().eq("id", id)
 
     if (error) {
-      console.error("Error deleting team:", error)
+      console.error("[DELETE /api/teams] Error:", error)
       return NextResponse.json({ error: error.message }, { status: 500 })
     }
 
     return NextResponse.json({ success: true })
   } catch (error) {
-    console.error("Error in teams API:", error)
+    console.error("[DELETE /api/teams] Server error:", error)
     return NextResponse.json(
       { error: "Internal server error" },
       { status: 500 }

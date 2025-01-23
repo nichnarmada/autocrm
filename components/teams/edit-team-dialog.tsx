@@ -1,4 +1,9 @@
+"use client"
+
 import { useState } from "react"
+import { zodResolver } from "@hookform/resolvers/zod"
+import { useForm } from "react-hook-form"
+import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -9,37 +14,50 @@ import {
   DialogTitle,
   DialogTrigger,
 } from "@/components/ui/dialog"
+import {
+  Form,
+  FormControl,
+  FormField,
+  FormItem,
+  FormLabel,
+  FormMessage,
+} from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
-import { Label } from "@/components/ui/label"
 import { Textarea } from "@/components/ui/textarea"
+import { Edit } from "lucide-react"
 import type { Team } from "@/app/(protected)/teams/page"
+
+const formSchema = z.object({
+  name: z.string().min(1, "Name is required"),
+  description: z.string().optional(),
+})
 
 interface EditTeamDialogProps {
   team: Team
-  onSuccess?: () => void
+  onSuccess: () => Promise<void>
+  children?: React.ReactNode
 }
 
-export function EditTeamDialog({ team, onSuccess }: EditTeamDialogProps) {
+export function EditTeamDialog({
+  team,
+  onSuccess,
+  children,
+}: EditTeamDialogProps) {
   const [open, setOpen] = useState(false)
-  const [name, setName] = useState(team.name)
-  const [description, setDescription] = useState(team.description || "")
-  const [isLoading, setIsLoading] = useState(false)
 
-  const handleSubmit = async (e: React.FormEvent) => {
-    e.preventDefault()
-    setIsLoading(true)
+  const form = useForm<z.infer<typeof formSchema>>({
+    resolver: zodResolver(formSchema),
+    defaultValues: {
+      name: team.name,
+      description: team.description || "",
+    },
+  })
 
+  async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch("/api/teams", {
+      const response = await fetch(`/api/teams`, {
         method: "PUT",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          id: team.id,
-          name,
-          description,
-        }),
+        body: JSON.stringify({ id: team.id, ...values }),
       })
 
       if (!response.ok) {
@@ -48,55 +66,62 @@ export function EditTeamDialog({ team, onSuccess }: EditTeamDialogProps) {
       }
 
       setOpen(false)
-      onSuccess?.()
+      form.reset()
+      await onSuccess()
     } catch (error) {
       console.error("Error updating team:", error)
-    } finally {
-      setIsLoading(false)
     }
   }
 
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button variant="ghost" size="sm">
-          Edit
-        </Button>
+        {children || (
+          <Button variant="ghost" size="sm">
+            <Edit className="h-4 w-4" />
+          </Button>
+        )}
       </DialogTrigger>
-      <DialogContent className="sm:max-w-[425px]">
-        <form onSubmit={handleSubmit}>
-          <DialogHeader>
-            <DialogTitle>Edit Team</DialogTitle>
-            <DialogDescription>
-              Make changes to the team details here.
-            </DialogDescription>
-          </DialogHeader>
-          <div className="grid gap-4 py-4">
-            <div className="grid gap-2">
-              <Label htmlFor="name">Name</Label>
-              <Input
-                id="name"
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                required
-              />
-            </div>
-            <div className="grid gap-2">
-              <Label htmlFor="description">Description</Label>
-              <Textarea
-                id="description"
-                value={description}
-                onChange={(e) => setDescription(e.target.value)}
-                rows={3}
-              />
-            </div>
-          </div>
-          <DialogFooter>
-            <Button type="submit" disabled={isLoading}>
-              {isLoading ? "Saving..." : "Save changes"}
-            </Button>
-          </DialogFooter>
-        </form>
+      <DialogContent>
+        <DialogHeader>
+          <DialogTitle>Edit Team</DialogTitle>
+          <DialogDescription>
+            Make changes to the team. Click save when you're done.
+          </DialogDescription>
+        </DialogHeader>
+        <Form {...form}>
+          <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-4">
+            <FormField
+              control={form.control}
+              name="name"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Name</FormLabel>
+                  <FormControl>
+                    <Input {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <FormField
+              control={form.control}
+              name="description"
+              render={({ field }) => (
+                <FormItem>
+                  <FormLabel>Description</FormLabel>
+                  <FormControl>
+                    <Textarea {...field} />
+                  </FormControl>
+                  <FormMessage />
+                </FormItem>
+              )}
+            />
+            <DialogFooter>
+              <Button type="submit">Save Changes</Button>
+            </DialogFooter>
+          </form>
+        </Form>
       </DialogContent>
     </Dialog>
   )
