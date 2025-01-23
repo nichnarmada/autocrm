@@ -1,3 +1,28 @@
+# Authentication Flow
+
+## Sign Up Process
+
+### Customer Sign Up
+
+- As a customer, I can sign up directly through the sign-up page
+- Email and password are required
+- After sign up, I am automatically assigned the 'customer' role
+- I am redirected to complete my profile setup
+
+### Agent Onboarding
+
+- Agents cannot sign up directly
+- Agents must be invited by an admin or existing agent
+- Upon clicking the invite link, they can set up their account
+- They are automatically assigned the 'agent' role
+- They are redirected to complete their profile setup
+
+### Sign In
+
+- All users (customers, agents, admins) use the same sign-in page
+- Email and password are required
+- Users are redirected based on their role after signing in
+
 # AutoCRM User Stories by Role
 
 ## Customer Service Agents
@@ -121,25 +146,33 @@
     - Should allow creating specialized teams
     - Needs audit logging of system changes
 
-11. As an administrator, I need to configure support workflows and SLAs so I can optimize ticket handling efficiency.
+11. As an administrator, I need to invite new agents to the system so I can grow my support team securely.
+
+    - Must send secure invitation emails
+    - Should automatically assign agent role upon acceptance
+    - Must prevent direct agent sign-ups without invitation
+    - Should allow tracking of pending invitations
+    - Needs ability to resend or revoke invitations
+
+12. As an administrator, I need to configure support workflows and SLAs so I can optimize ticket handling efficiency.
 
     - Should support complex routing rules
     - Must allow custom ticket fields
     - Needs ability to define escalation paths
 
-12. As an administrator, I need to manage the knowledge base so I can maintain updated self-service resources.
+13. As an administrator, I need to manage the knowledge base so I can maintain updated self-service resources.
 
     - Should support article versioning
     - Must allow categorization and tagging
     - Needs analytics on article effectiveness
 
-13. As an administrator, I need to set up automation rules so I can improve team efficiency.
+14. As an administrator, I need to set up automation rules so I can improve team efficiency.
 
     - Must support complex conditional logic
     - Should enable custom workflows
     - Needs testing capabilities before deployment
 
-14. As an administrator, I need to monitor system performance and analytics so I can ensure reliable operation and identify improvements.
+15. As an administrator, I need to monitor system performance and analytics so I can ensure reliable operation and identify improvements.
 
     - Should provide customizable dashboards
     - Must track system health metrics
