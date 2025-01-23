@@ -10,6 +10,7 @@ export async function signUpAction(formData: FormData) {
   const origin = headersList.get("origin")
   const email = formData.get("email") as string
   const password = formData.get("password") as string
+  const isInvited = formData.get("isInvited") === "true"
 
   if (!email || !password) {
     return encodedRedirect("error", "/sign-up", "All fields are required")
@@ -21,10 +22,14 @@ export async function signUpAction(formData: FormData) {
     email,
     password,
     options: {
-      emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?next=/setup-profile`,
+      emailRedirectTo: `${process.env.NEXT_PUBLIC_BASE_URL}/auth/callback?next=${
+        isInvited ? "/setup-profile?invite=true" : "/verify-email"
+      }`,
       data: {
         email: email,
         temp_display_name: email.split("@")[0],
+        // For invited users, they'll skip email verification
+        email_verified: isInvited,
       },
     },
   })
@@ -42,6 +47,12 @@ export async function signUpAction(formData: FormData) {
     )
   }
 
+  // For invited users, redirect to setup profile
+  if (isInvited) {
+    return redirect("/setup-profile?invite=true")
+  }
+
+  // For regular users, redirect to verify email
   return redirect("/verify-email")
 }
 
@@ -103,7 +114,7 @@ export const resetPasswordAction = async (formData: FormData) => {
   const confirmPassword = formData.get("confirmPassword") as string
 
   if (!password || !confirmPassword) {
-    encodedRedirect(
+    return encodedRedirect(
       "error",
       "/reset-password",
       "Password and confirm password are required"
@@ -111,7 +122,7 @@ export const resetPasswordAction = async (formData: FormData) => {
   }
 
   if (password !== confirmPassword) {
-    encodedRedirect("error", "/reset-password", "Passwords do not match")
+    return encodedRedirect("error", "/reset-password", "Passwords do not match")
   }
 
   const { error } = await supabase.auth.updateUser({
@@ -119,10 +130,10 @@ export const resetPasswordAction = async (formData: FormData) => {
   })
 
   if (error) {
-    encodedRedirect("error", "/reset-password", "Password update failed")
+    return encodedRedirect("error", "/reset-password", "Password update failed")
   }
 
-  encodedRedirect("success", "/reset-password", "Password updated")
+  return redirect("/sign-in?message=Password updated successfully")
 }
 
 export const signOutAction = async () => {
@@ -136,24 +147,23 @@ export async function setupProfileAction(formData: FormData) {
   const fullName = formData.get("fullName") as string
   const password = formData.get("password") as string
   const confirmPassword = formData.get("confirmPassword") as string
+  const isInvited = formData.get("isInvited") === "true"
 
   if (!fullName) {
     return encodedRedirect("error", "/setup-profile", "Full name is required")
   }
 
   try {
-    // Get the current user
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    if (!user) throw new Error("No user found")
 
-    // Check if user was invited
-    const isInvitedUser =
-      user.user_metadata?.role === "agent" && user.user_metadata?.invited_by
+    if (!user) {
+      throw new Error("No user found")
+    }
 
-    // If invited user, validate and update password
-    if (isInvitedUser) {
+    // For invited users, handle password setup
+    if (isInvited) {
       if (!password || !confirmPassword) {
         return encodedRedirect(
           "error",
@@ -170,15 +180,16 @@ export async function setupProfileAction(formData: FormData) {
         )
       }
 
-      // Update the user's password
-      const { error: updateError } = await supabase.auth.updateUser({
-        password,
+      const { error: passwordError } = await supabase.auth.updateUser({
+        password: password,
       })
 
-      if (updateError) throw updateError
+      if (passwordError) {
+        return encodedRedirect("error", "/setup-profile", passwordError.message)
+      }
     }
 
-    // Update the user's profile
+    // Update profile
     const { error: profileError } = await supabase
       .from("profiles")
       .update({
@@ -187,9 +198,11 @@ export async function setupProfileAction(formData: FormData) {
       })
       .eq("id", user.id)
 
-    if (profileError) throw profileError
+    if (profileError) {
+      return encodedRedirect("error", "/setup-profile", profileError.message)
+    }
 
-    return redirect("/dashboard")
+    return encodedRedirect("success", "/dashboard", "Profile setup complete")
   } catch (error) {
     console.error("Error setting up profile:", error)
     return encodedRedirect(

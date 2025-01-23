@@ -1,7 +1,6 @@
 "use client"
 
 import { User } from "@supabase/supabase-js"
-import { Button } from "@/components/ui/button"
 import {
   Card,
   CardContent,
@@ -12,6 +11,9 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { setupProfileAction } from "@/app/actions"
+import { SubmitButton } from "@/components/submit-button"
+import { useRouter } from "next/navigation"
+import { useTransition } from "react"
 
 interface SetupProfileFormProps {
   user: User
@@ -27,6 +29,17 @@ export function SetupProfileForm({
   searchParams,
   isInvitedUser,
 }: SetupProfileFormProps) {
+  const router = useRouter()
+  const [isPending, startTransition] = useTransition()
+
+  async function onSubmit(formData: FormData) {
+    formData.append("isInvited", isInvitedUser.toString())
+
+    startTransition(async () => {
+      await setupProfileAction(formData)
+    })
+  }
+
   return (
     <Card>
       <CardHeader>
@@ -38,7 +51,7 @@ export function SetupProfileForm({
         </CardDescription>
       </CardHeader>
       <CardContent>
-        <form action={setupProfileAction} className="space-y-4">
+        <form action={onSubmit} className="space-y-4">
           <div className="space-y-2">
             <Label htmlFor="email">Email</Label>
             <Input
@@ -70,6 +83,7 @@ export function SetupProfileForm({
                   type="password"
                   placeholder="Set your password"
                   required={isInvitedUser}
+                  minLength={6}
                 />
               </div>
 
@@ -81,6 +95,7 @@ export function SetupProfileForm({
                   type="password"
                   placeholder="Confirm your password"
                   required={isInvitedUser}
+                  minLength={6}
                 />
               </div>
             </>
@@ -97,9 +112,9 @@ export function SetupProfileForm({
             </div>
           )}
 
-          <Button type="submit" className="w-full">
+          <SubmitButton className="w-full" pendingText="Setting up profile...">
             Complete Setup
-          </Button>
+          </SubmitButton>
         </form>
       </CardContent>
     </Card>

@@ -13,9 +13,16 @@ import { useEffect } from "react"
 interface SignUpFormProps {
   messageParams: Message
   onSubmit: (formData: FormData) => Promise<void>
+  defaultEmail?: string | null
+  isInvite?: boolean
 }
 
-export function SignUpForm({ messageParams, onSubmit }: SignUpFormProps) {
+export function SignUpForm({
+  messageParams,
+  onSubmit,
+  defaultEmail,
+  isInvite,
+}: SignUpFormProps) {
   const { toast } = useToast()
 
   useEffect(() => {
@@ -37,6 +44,8 @@ export function SignUpForm({ messageParams, onSubmit }: SignUpFormProps) {
             name="email"
             type="email"
             placeholder="you@example.com"
+            defaultValue={defaultEmail || ""}
+            disabled={!!defaultEmail}
             required
           />
         </div>
@@ -58,20 +67,22 @@ export function SignUpForm({ messageParams, onSubmit }: SignUpFormProps) {
           formAction={signUpAction}
           pendingText="Creating account..."
         >
-          Create account
+          {isInvite ? "Complete Setup" : "Create account"}
         </SubmitButton>
 
         <FormMessage message={messageParams} />
 
-        <p className="text-center text-sm text-muted-foreground">
-          Already have an account?{" "}
-          <Link
-            href="/sign-in"
-            className="font-medium text-primary hover:underline"
-          >
-            Sign in
-          </Link>
-        </p>
+        {!isInvite && (
+          <p className="text-center text-sm text-muted-foreground">
+            Already have an account?{" "}
+            <Link
+              href="/sign-in"
+              className="font-medium text-primary hover:underline"
+            >
+              Sign in
+            </Link>
+          </p>
+        )}
       </form>
       <Toaster />
     </>

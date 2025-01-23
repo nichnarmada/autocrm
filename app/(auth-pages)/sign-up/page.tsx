@@ -16,6 +16,8 @@ export default function SignUp({ searchParams }: SearchParamsProps) {
   const supabase = createClient()
   const { toast } = useToast()
   const [message, setMessage] = useState<Message>({ message: "" })
+  const [inviteEmail, setInviteEmail] = useState<string | null>(null)
+  const [isInvite, setIsInvite] = useState(false)
 
   useEffect(() => {
     const loadSearchParams = async () => {
@@ -28,6 +30,14 @@ export default function SignUp({ searchParams }: SearchParamsProps) {
             ? { message: params.message as string }
             : { message: "" }
       setMessage(messageParams)
+
+      // Check if this is an invite flow
+      if (params.invite === "true") {
+        setIsInvite(true)
+        if (params.email) {
+          setInviteEmail(params.email as string)
+        }
+      }
     }
     loadSearchParams()
   }, [searchParams])
@@ -40,8 +50,12 @@ export default function SignUp({ searchParams }: SearchParamsProps) {
         options: {
           data: {
             full_name: formData.get("full_name") as string,
-            role: "customer", // Always set as customer for public sign-up
+            role: isInvite ? "agent" : "customer", // Set role based on invite status
           },
+          // Skip email verification for invited agents
+          emailRedirectTo: isInvite
+            ? undefined
+            : `${process.env.NEXT_PUBLIC_SITE_URL}/auth/callback?next=/setup-profile`,
         },
       })
 
@@ -55,11 +69,17 @@ export default function SignUp({ searchParams }: SearchParamsProps) {
       }
 
       if (data?.user) {
-        toast({
-          title: "Success",
-          description: "Please check your email to verify your account.",
-        })
-        router.push("/verify-email")
+        if (isInvite) {
+          // For invited agents, go directly to setup profile
+          router.push("/setup-profile")
+        } else {
+          // For regular users, verify email first
+          toast({
+            title: "Success",
+            description: "Please check your email to verify your account.",
+          })
+          router.push("/verify-email")
+        }
       }
     } catch (error) {
       toast({
@@ -74,10 +94,19 @@ export default function SignUp({ searchParams }: SearchParamsProps) {
     <div className="w-full max-w-xl space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">AutoCRM</h1>
-        <p className="mt-3 text-muted-foreground">Create your account</p>
+        <p className="mt-3 text-muted-foreground">
+          {isInvite
+            ? "Complete your agent account setup"
+            : "Create your account"}
+        </p>
       </div>
 
-      <SignUpForm messageParams={message} onSubmit={signUp} />
+      <SignUpForm
+        messageParams={message}
+        onSubmit={signUp}
+        defaultEmail={inviteEmail}
+        isInvite={isInvite}
+      />
     </div>
   )
 }

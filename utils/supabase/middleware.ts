@@ -5,8 +5,6 @@ export const updateSession = async (request: NextRequest) => {
   // This `try/catch` block is only here for the interactive tutorial.
   // Feel free to remove once you have Supabase connected.
   try {
-    console.log("Middleware - Current path:", request.nextUrl.pathname)
-
     let response = NextResponse.next({
       request: {
         headers: request.headers,
@@ -41,10 +39,6 @@ export const updateSession = async (request: NextRequest) => {
     const {
       data: { user },
     } = await supabase.auth.getUser()
-    console.log(
-      "Middleware - User state:",
-      user ? "Authenticated" : "Not authenticated"
-    )
 
     // Handle unauthenticated users
     if (
@@ -56,13 +50,11 @@ export const updateSession = async (request: NextRequest) => {
       !request.nextUrl.pathname.startsWith("/setup-profile") &&
       !request.nextUrl.pathname.startsWith("/auth")
     ) {
-      console.log("Middleware - Redirecting to sign-in")
       const url = request.nextUrl.clone()
       url.pathname = "/sign-in"
       return NextResponse.redirect(url)
     }
 
-    console.log("Middleware - Allowing access to:", request.nextUrl.pathname)
     return response
   } catch (e) {
     console.error("Middleware - Error:", e)

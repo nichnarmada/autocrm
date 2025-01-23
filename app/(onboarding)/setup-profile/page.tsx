@@ -2,24 +2,19 @@ import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
 import { SetupProfileForm } from "./setup-profile-form"
 
+type SearchParams = {
+  error?: string
+  success?: string
+  message?: string
+}
+
 type SetupProfileProps = {
-  params: Promise<{ code?: string; error?: string; success?: string }>
+  params: Promise<SearchParams>
 }
 
 export default async function SetupProfile({ params }: SetupProfileProps) {
   const searchParams = await params
   const supabase = await createClient()
-
-  // If we have a code in the URL, exchange it for a session
-  if (searchParams.code) {
-    const { error } = await supabase.auth.exchangeCodeForSession(
-      searchParams.code
-    )
-    if (error) {
-      console.error("Error exchanging code for session:", error)
-      redirect("/sign-in?error=Could not setup profile")
-    }
-  }
 
   // Get the current user
   const {
