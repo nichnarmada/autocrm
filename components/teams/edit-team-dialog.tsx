@@ -25,25 +25,32 @@ import {
 import { Input } from "@/components/ui/input"
 import { Textarea } from "@/components/ui/textarea"
 import { Edit } from "lucide-react"
-import type { Team } from "@/app/(protected)/teams/page"
+import type { Team } from "@/types/teams"
+import { useToast } from "@/hooks/use-toast"
 
 const formSchema = z.object({
   name: z.string().min(1, "Name is required"),
-  description: z.string().optional(),
+  description: z.string().optional().default(""),
 })
 
 interface EditTeamDialogProps {
   team: Team
   onSuccess: () => Promise<void>
+  onUpdateTeam: (
+    teamId: string,
+    data: { name: string; description: string }
+  ) => Promise<void>
   children?: React.ReactNode
 }
 
 export function EditTeamDialog({
   team,
   onSuccess,
+  onUpdateTeam,
   children,
 }: EditTeamDialogProps) {
   const [open, setOpen] = useState(false)
+  const { toast } = useToast()
 
   const form = useForm<z.infer<typeof formSchema>>({
     resolver: zodResolver(formSchema),
@@ -55,21 +62,24 @@ export function EditTeamDialog({
 
   async function onSubmit(values: z.infer<typeof formSchema>) {
     try {
-      const response = await fetch(`/api/teams`, {
-        method: "PUT",
-        body: JSON.stringify({ id: team.id, ...values }),
+      await onUpdateTeam(team.id, {
+        name: values.name,
+        description: values.description || "",
       })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error)
-      }
-
+      toast({
+        title: "Success",
+        description: "Team updated successfully.",
+      })
       setOpen(false)
       form.reset()
       await onSuccess()
     } catch (error) {
       console.error("Error updating team:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update team. Please try again.",
+      })
     }
   }
 

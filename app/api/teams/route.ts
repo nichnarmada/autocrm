@@ -23,9 +23,15 @@ export async function GET() {
           id,
           user_id,
           team_id,
-          role,
           created_at,
-          updated_at
+          updated_at,
+          profiles:user_id (
+            id,
+            email,
+            full_name,
+            avatar_url,
+            role
+          )
         )
       `
       )

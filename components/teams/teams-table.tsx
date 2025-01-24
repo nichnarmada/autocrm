@@ -1,6 +1,16 @@
 "use client"
 
-import { useState } from "react"
+import { Fragment, useState } from "react"
+import { Button } from "@/components/ui/button"
+import { AddMemberDialog } from "@/components/teams/add-member-dialog"
+import { DeleteTeamDialog } from "@/components/teams/delete-team-dialog"
+import {
+  ChevronDown,
+  ChevronRight,
+  Edit,
+  Trash2,
+  UserRoundPen,
+} from "lucide-react"
 import {
   Table,
   TableBody,
@@ -9,152 +19,135 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
-import { Button } from "@/components/ui/button"
-import {
-  MoreHorizontal,
-  ChevronDown,
-  ChevronRight,
-  Trash2,
-  Edit,
-} from "lucide-react"
 import { TeamMembers } from "./team-members"
 import { EditTeamDialog } from "./edit-team-dialog"
-import {
-  AlertDialog,
-  AlertDialogAction,
-  AlertDialogCancel,
-  AlertDialogContent,
-  AlertDialogDescription,
-  AlertDialogFooter,
-  AlertDialogHeader,
-  AlertDialogTitle,
-  AlertDialogTrigger,
-} from "@/components/ui/alert-dialog"
-import type { Team } from "@/app/(protected)/teams/page"
+import type { Team, Profile, PendingChange } from "@/types/teams"
 
 interface TeamsTableProps {
   teams: Team[]
+  setTeams: React.Dispatch<React.SetStateAction<Team[]>>
   onDeleteTeam: (teamId: string) => Promise<void>
   onTeamUpdate: () => Promise<void>
+  onUpdateMembers: (teamId: string, changes: PendingChange[]) => Promise<void>
+  onUpdateTeam: (
+    teamId: string,
+    data: { name: string; description: string }
+  ) => Promise<void>
+  onRemoveMember: (teamId: string, userId: string) => Promise<void>
+  fetchAvailableMembers: (teamId: string) => Promise<Profile[]>
 }
 
 export function TeamsTable({
   teams,
+  setTeams,
   onDeleteTeam,
   onTeamUpdate,
+  onUpdateMembers,
+  onUpdateTeam,
+  onRemoveMember,
+  fetchAvailableMembers,
 }: TeamsTableProps) {
   const [expandedTeam, setExpandedTeam] = useState<string | null>(null)
 
   return (
-    <div className="rounded-md border">
+    <div className="rounded-lg border">
       <Table>
         <TableHeader>
           <TableRow>
-            <TableHead className="w-[40px]"></TableHead>
             <TableHead>Name</TableHead>
             <TableHead>Members</TableHead>
             <TableHead>Created At</TableHead>
-            <TableHead className="w-[70px]"></TableHead>
+            <TableHead>Actions</TableHead>
           </TableRow>
         </TableHeader>
         <TableBody>
           {teams.map((team) => (
-            <>
-              <TableRow key={team.id}>
+            <Fragment key={team.id}>
+              <TableRow>
                 <TableCell>
-                  <Button
-                    variant="ghost"
-                    size="sm"
-                    className="h-8 w-8 p-0"
-                    onClick={() =>
-                      setExpandedTeam(expandedTeam === team.id ? null : team.id)
-                    }
-                  >
-                    {expandedTeam === team.id ? (
-                      <ChevronDown className="h-4 w-4" />
-                    ) : (
-                      <ChevronRight className="h-4 w-4" />
-                    )}
-                  </Button>
-                </TableCell>
-                <TableCell>
-                  <div>
-                    <p className="font-medium">{team.name}</p>
-                    {team.description && (
-                      <p className="text-sm text-muted-foreground">
-                        {team.description}
-                      </p>
-                    )}
+                  <div className="flex items-center gap-2">
+                    <Button
+                      variant="ghost"
+                      size="icon"
+                      className="h-6 w-6"
+                      onClick={() =>
+                        setExpandedTeam(
+                          expandedTeam === team.id ? null : team.id
+                        )
+                      }
+                    >
+                      {expandedTeam === team.id ? (
+                        <ChevronDown className="h-4 w-4" />
+                      ) : (
+                        <ChevronRight className="h-4 w-4" />
+                      )}
+                    </Button>
+                    {team.name}
                   </div>
                 </TableCell>
-                <TableCell>{team.team_members?.length || 0} members</TableCell>
                 <TableCell>
-                  {new Date(team.created_at!).toLocaleDateString()}
+                  <span className="text-sm text-muted-foreground">
+                    {team.team_members.length} members
+                  </span>
                 </TableCell>
                 <TableCell>
-                  <DropdownMenu>
-                    <DropdownMenuTrigger asChild>
-                      <Button variant="ghost" className="h-8 w-8 p-0">
-                        <MoreHorizontal className="h-4 w-4" />
+                  {team.created_at
+                    ? new Date(team.created_at).toLocaleDateString()
+                    : "Unknown"}
+                </TableCell>
+                <TableCell>
+                  <div className="flex items-center gap-1">
+                    <AddMemberDialog
+                      teamId={team.id}
+                      teams={teams.filter((t) => t.id !== team.id)}
+                      currentTeamMembers={team.team_members}
+                      setTeams={setTeams}
+                      onUpdateMembers={(changes) =>
+                        onUpdateMembers(team.id, changes)
+                      }
+                      onSuccess={onTeamUpdate}
+                      fetchAvailableMembers={fetchAvailableMembers}
+                    >
+                      <Button variant="ghost" size="icon">
+                        <span className="sr-only">Manage team members</span>
+                        <UserRoundPen className="h-4 w-4" />
                       </Button>
-                    </DropdownMenuTrigger>
-                    <DropdownMenuContent align="end">
-                      <DropdownMenuItem asChild>
-                        <EditTeamDialog team={team} onSuccess={onTeamUpdate}>
-                          <div className="flex items-center">
-                            <Edit className="mr-2 h-4 w-4" />
-                            Edit Team
-                          </div>
-                        </EditTeamDialog>
-                      </DropdownMenuItem>
-                      <DropdownMenuItem asChild>
-                        <AlertDialog>
-                          <AlertDialogTrigger className="w-full">
-                            <div className="flex items-center text-destructive">
-                              <Trash2 className="mr-2 h-4 w-4" />
-                              Delete Team
-                            </div>
-                          </AlertDialogTrigger>
-                          <AlertDialogContent>
-                            <AlertDialogHeader>
-                              <AlertDialogTitle>Delete Team</AlertDialogTitle>
-                              <AlertDialogDescription>
-                                Are you sure you want to delete this team? This
-                                action cannot be undone.
-                              </AlertDialogDescription>
-                            </AlertDialogHeader>
-                            <AlertDialogFooter>
-                              <AlertDialogCancel>Cancel</AlertDialogCancel>
-                              <AlertDialogAction
-                                onClick={() => onDeleteTeam(team.id)}
-                              >
-                                Delete
-                              </AlertDialogAction>
-                            </AlertDialogFooter>
-                          </AlertDialogContent>
-                        </AlertDialog>
-                      </DropdownMenuItem>
-                    </DropdownMenuContent>
-                  </DropdownMenu>
+                    </AddMemberDialog>
+                    <EditTeamDialog
+                      team={team}
+                      onSuccess={onTeamUpdate}
+                      onUpdateTeam={onUpdateTeam}
+                    >
+                      <Button variant="ghost" size="icon">
+                        <span className="sr-only">Edit team</span>
+                        <Edit className="h-4 w-4" />
+                      </Button>
+                    </EditTeamDialog>
+                    <DeleteTeamDialog
+                      teamId={team.id}
+                      onConfirm={() => onDeleteTeam(team.id)}
+                    >
+                      <Button variant="ghost" size="icon">
+                        <span className="sr-only">Delete team</span>
+                        <Trash2 className="h-4 w-4" />
+                      </Button>
+                    </DeleteTeamDialog>
+                  </div>
                 </TableCell>
               </TableRow>
               {expandedTeam === team.id && (
                 <TableRow>
-                  <TableCell colSpan={5} className="p-0">
+                  <TableCell colSpan={4}>
                     <TeamMembers
                       teamId={team.id}
-                      members={team.team_members || []}
+                      members={team.team_members}
+                      onUpdate={onTeamUpdate}
+                      onRemoveMember={onRemoveMember}
                     />
                   </TableCell>
                 </TableRow>
               )}
-            </>
+            </Fragment>
           ))}
         </TableBody>
       </Table>

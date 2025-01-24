@@ -19,9 +19,13 @@ import { Plus } from "lucide-react"
 
 interface CreateTeamDialogProps {
   onSuccess?: () => void
+  onCreateTeam: (data: { name: string; description: string }) => Promise<void>
 }
 
-export function CreateTeamDialog({ onSuccess }: CreateTeamDialogProps) {
+export function CreateTeamDialog({
+  onSuccess,
+  onCreateTeam,
+}: CreateTeamDialogProps) {
   const [open, setOpen] = useState(false)
   const [isLoading, setIsLoading] = useState(false)
   const { toast } = useToast()
@@ -35,17 +39,7 @@ export function CreateTeamDialog({ onSuccess }: CreateTeamDialogProps) {
     const description = formData.get("description") as string
 
     try {
-      const response = await fetch("/api/teams", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({ name, description }),
-      })
-
-      const data = await response.json()
-      if (!response.ok) throw new Error(data.error)
-
+      await onCreateTeam({ name, description })
       toast({
         title: "Success",
         description: "Team created successfully.",

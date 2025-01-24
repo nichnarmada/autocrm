@@ -1,103 +1,88 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import type { Database } from "@/types/supabase"
 import { CreateTeamDialog } from "@/components/teams/create-team-dialog"
 import { TeamsTable } from "@/components/teams/teams-table"
 import { LayoutGrid, List } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Skeleton } from "@/components/ui/skeleton"
-
-type Tables = Database["public"]["Tables"]
-export type Team = Tables["teams"]["Row"] & {
-  team_members: Tables["team_members"]["Row"][]
-}
-
-type ViewMode = "list" | "board"
+import { TeamsSkeletonLoading } from "./skeleton-loading"
+import type { Team, PendingChange, ViewMode } from "@/types/teams"
+import {
+  fetchTeams,
+  fetchAvailableMembers,
+  createTeam,
+  updateTeam,
+  deleteTeam,
+  removeMember,
+  updateMembers,
+} from "./api"
 
 export default function TeamsPage() {
   const [teams, setTeams] = useState<Team[]>([])
   const [isLoading, setIsLoading] = useState(true)
   const [viewMode, setViewMode] = useState<ViewMode>("list")
 
-  const fetchTeams = async () => {
+  const refreshData = async () => {
     try {
-      const response = await fetch("/api/teams")
-      const data = await response.json()
-
-      if (!response.ok) {
-        console.error("[TeamsPage] Error fetching teams:", data.error)
-        throw new Error(data.error)
-      }
-
-      setTeams(data)
+      const teamsData = await fetchTeams()
+      setTeams(teamsData)
     } catch (error) {
-      console.error("[TeamsPage] Error fetching teams:", error)
+      console.error("[TeamsPage] Error refreshing data:", error)
     } finally {
       setIsLoading(false)
     }
   }
 
+  const handleCreateTeam = async (data: {
+    name: string
+    description: string
+  }) => {
+    await createTeam(data)
+    await refreshData()
+  }
+
+  const handleUpdateTeam = async (
+    teamId: string,
+    data: { name: string; description: string }
+  ) => {
+    await updateTeam(teamId, data)
+    await refreshData()
+  }
+
+  const handleRemoveMember = async (teamId: string, userId: string) => {
+    await removeMember(teamId, userId)
+    await refreshData()
+  }
+
+  const handleUpdateMembers = async (
+    teamId: string,
+    changes: PendingChange[]
+  ) => {
+    try {
+      await updateMembers(teamId, changes)
+      await refreshData()
+    } catch (error) {
+      console.error("[TeamsPage] Error updating members:", error)
+      throw error
+    }
+  }
+
   const handleDeleteTeam = async (teamId: string) => {
     try {
-      const response = await fetch(`/api/teams?id=${teamId}`, {
-        method: "DELETE",
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        console.error("[TeamsPage] Error deleting team:", data.error)
-        throw new Error(data.error)
-      }
-
-      await fetchTeams()
+      await deleteTeam(teamId)
+      await refreshData()
     } catch (error) {
       console.error("[TeamsPage] Error deleting team:", error)
     }
   }
 
   useEffect(() => {
-    fetchTeams()
+    refreshData()
     return () => {}
   }, [])
 
   if (isLoading) {
-    return (
-      <div className="container">
-        <div className="mb-6 flex items-center justify-between">
-          <Skeleton className="h-8 w-48" />
-          <div className="flex items-center gap-4">
-            <Skeleton className="h-10 w-[200px]" />
-            <Skeleton className="h-10 w-32" />
-          </div>
-        </div>
-
-        <div className="rounded-lg border">
-          <div className="border-b">
-            <div className="grid grid-cols-4 p-4">
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-4 w-32" />
-              <Skeleton className="h-4 w-24" />
-            </div>
-          </div>
-          {[...Array(5)].map((_, i) => (
-            <div
-              key={i}
-              className="grid grid-cols-4 border-b p-4 last:border-0"
-            >
-              <Skeleton className="h-4 w-48" />
-              <Skeleton className="h-4 w-64" />
-              <Skeleton className="h-4 w-32" />
-              <div className="flex justify-end gap-2">
-                <Skeleton className="h-9 w-9" />
-                <Skeleton className="h-9 w-9" />
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
-    )
+    return <TeamsSkeletonLoading />
   }
 
   return (
@@ -123,9 +108,8 @@ export default function TeamsPage() {
             </TabsList>
           </Tabs>
           <CreateTeamDialog
-            onSuccess={async () => {
-              await fetchTeams()
-            }}
+            onCreateTeam={handleCreateTeam}
+            onSuccess={refreshData}
           />
         </div>
       </div>
@@ -133,10 +117,13 @@ export default function TeamsPage() {
       {viewMode === "list" ? (
         <TeamsTable
           teams={teams}
+          setTeams={setTeams}
           onDeleteTeam={handleDeleteTeam}
-          onTeamUpdate={async () => {
-            await fetchTeams()
-          }}
+          onTeamUpdate={refreshData}
+          onUpdateMembers={handleUpdateMembers}
+          onUpdateTeam={handleUpdateTeam}
+          onRemoveMember={handleRemoveMember}
+          fetchAvailableMembers={fetchAvailableMembers}
         />
       ) : (
         <div className="rounded-lg border p-8 text-center">
