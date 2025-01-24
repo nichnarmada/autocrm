@@ -82,11 +82,6 @@ async function TicketsContent({
     console.error("Error fetching agents:", agentsResponse.error)
   }
 
-  // Log the full response for debugging
-  console.log("Tickets Response:", ticketsResponse)
-  console.log("Teams Response:", teamsResponse)
-  console.log("Agents Response:", agentsResponse)
-
   return (
     <TicketsListView
       tickets={ticketsResponse.data || []}

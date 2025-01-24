@@ -1,6 +1,7 @@
 "use client"
 
 import { useState } from "react"
+import { PlusCircle } from "lucide-react"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -13,9 +14,8 @@ import {
 import { CreateTicketForm } from "./create-ticket-form"
 import { createClient } from "@/utils/supabase/client"
 import { useEffect } from "react"
-import type { Database } from "@/types/supabase"
-
-type Team = Database["public"]["Tables"]["teams"]["Row"]
+import { createTicket } from "@/app/(protected)/tickets/api"
+import { Team } from "@/types/teams"
 
 export function CreateTicketButton() {
   const [open, setOpen] = useState(false)
@@ -37,7 +37,10 @@ export function CreateTicketButton() {
   return (
     <Dialog open={open} onOpenChange={setOpen}>
       <DialogTrigger asChild>
-        <Button>Create Ticket</Button>
+        <Button>
+          <PlusCircle className="mr-2 h-4 w-4" />
+          Create Ticket
+        </Button>
       </DialogTrigger>
       <DialogContent className="sm:max-w-[600px]">
         <DialogHeader>
@@ -47,7 +50,11 @@ export function CreateTicketButton() {
             marked with * are required.
           </DialogDescription>
         </DialogHeader>
-        <CreateTicketForm teams={teams} onSuccess={() => setOpen(false)} />
+        <CreateTicketForm
+          teams={teams}
+          onSuccess={() => setOpen(false)}
+          onSubmit={createTicket}
+        />
       </DialogContent>
     </Dialog>
   )

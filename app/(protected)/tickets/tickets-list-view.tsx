@@ -28,6 +28,7 @@ import {
 import { columns } from "./columns"
 import { DataTablePagination } from "./data-table-pagination"
 import { DataTableToolbar } from "./data-table-toolbar"
+import { CreateTicketButton } from "@/components/tickets/create-ticket-button"
 import type { Ticket } from "@/types/tickets"
 import type { Team } from "@/types/teams"
 import type { Profile } from "@/types/users"
@@ -79,7 +80,7 @@ export function TicketsListView({
 
   return (
     <>
-      <div className="mb-4 flex items-center gap-4">
+      <div className="mb-4 flex items-center justify-between">
         <Tabs
           value={viewMode}
           onValueChange={(v) => {
@@ -97,6 +98,7 @@ export function TicketsListView({
             </TabsTrigger>
           </TabsList>
         </Tabs>
+        <CreateTicketButton />
       </div>
 
       {viewMode === "list" ? (

@@ -2,7 +2,6 @@
 
 import { zodResolver } from "@hookform/resolvers/zod"
 import { useForm } from "react-hook-form"
-import * as z from "zod"
 import { Button } from "@/components/ui/button"
 import {
   Form,
@@ -22,59 +21,23 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import type {
-  TicketPriority,
-  TicketStatus,
-  TicketCategory,
-} from "@/types/tickets"
-import type { Database } from "@/types/supabase"
-
-type Team = Database["public"]["Tables"]["teams"]["Row"]
-
-const ticketSchema = z.object({
-  title: z.string().min(1, "Title is required").max(100, "Title is too long"),
-  description: z.string().min(1, "Description is required"),
-  priority: z.enum(
-    ["low", "medium", "high", "urgent"] as [
-      TicketPriority,
-      ...TicketPriority[],
-    ],
-    {
-      required_error: "Please select a priority level",
-    }
-  ),
-  category: z.enum(
-    [
-      "bug",
-      "feature_request",
-      "support",
-      "question",
-      "documentation",
-      "enhancement",
-      "other",
-    ] as [TicketCategory, ...TicketCategory[]],
-    {
-      required_error: "Please select a category",
-    }
-  ),
-  team_id: z.string().optional(),
-  status: z
-    .enum(["new", "open", "in_progress", "resolved", "closed"] as [
-      TicketStatus,
-      ...TicketStatus[],
-    ])
-    .default("new"),
-})
+import { ticketSchema } from "@/app/(protected)/tickets/schema"
+import type { z } from "zod"
+import { Team } from "@/types/teams"
 
 interface CreateTicketFormProps {
   teams?: Team[]
   onSuccess?: () => void
+  onSubmit: (data: z.infer<typeof ticketSchema>) => Promise<void>
 }
 
-export function CreateTicketForm({ teams, onSuccess }: CreateTicketFormProps) {
+export function CreateTicketForm({
+  teams,
+  onSuccess,
+  onSubmit,
+}: CreateTicketFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
 
@@ -90,20 +53,10 @@ export function CreateTicketForm({ teams, onSuccess }: CreateTicketFormProps) {
     },
   })
 
-  async function onSubmit(values: z.infer<typeof ticketSchema>) {
+  async function handleSubmit(values: z.infer<typeof ticketSchema>) {
     setIsSubmitting(true)
-    const supabase = createClient()
-
     try {
-      const { error } = await supabase.from("tickets").insert([
-        {
-          ...values,
-          created_by: (await supabase.auth.getUser()).data.user?.id,
-        },
-      ])
-
-      if (error) throw error
-
+      await onSubmit(values)
       form.reset()
       router.refresh()
       onSuccess?.()
@@ -117,7 +70,7 @@ export function CreateTicketForm({ teams, onSuccess }: CreateTicketFormProps) {
 
   return (
     <Form {...form}>
-      <form onSubmit={form.handleSubmit(onSubmit)} className="space-y-6">
+      <form onSubmit={form.handleSubmit(handleSubmit)} className="space-y-6">
         <FormField
           control={form.control}
           name="title"
