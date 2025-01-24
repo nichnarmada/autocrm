@@ -16,7 +16,9 @@ import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
 import { Loader2, Plus, Trash2 } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
-import type { Team, TeamMember, Profile, PendingChange } from "@/types/teams"
+import type { Team, TeamMember } from "@/types/teams"
+import type { Profile } from "@/types/users"
+import { PendingChange } from "@/app/(protected)/teams/api"
 
 interface AddMemberDialogProps {
   teamId: string

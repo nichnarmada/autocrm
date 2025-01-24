@@ -72,7 +72,7 @@ export function TeamMembers({
                     <AvatarFallback>
                       {member.profiles?.full_name
                         ?.split(" ")
-                        .map((n) => n[0])
+                        .map((n: string) => n[0])
                         .join("")
                         .toUpperCase() ||
                         member.profiles?.email?.[0].toUpperCase() ||

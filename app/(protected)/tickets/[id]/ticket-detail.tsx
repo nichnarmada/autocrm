@@ -20,18 +20,12 @@ import {
 } from "@/components/ui/select"
 import { Skeleton } from "@/components/ui/skeleton"
 import { CommentSection } from "./comment-section"
-import type { Database } from "@/types/supabase"
-
-type Tables = Database["public"]["Tables"]
-type Ticket = Tables["tickets"]["Row"] & {
-  assigned_to: Tables["profiles"]["Row"] | null
-  created_by: Tables["profiles"]["Row"] | null
-  customer_id: Tables["profiles"]["Row"] | null
-  team_id: Tables["teams"]["Row"] | null
-  ticket_comments: (Tables["ticket_comments"]["Row"] & {
-    user_id: Tables["profiles"]["Row"] | null
-  })[]
-}
+import type {
+  Ticket,
+  UpdateTicketInput,
+  TicketStatus,
+  TicketPriority,
+} from "@/types/tickets"
 
 interface TicketDetailProps {
   id: string
@@ -60,7 +54,7 @@ export function TicketDetail({ id }: TicketDetailProps) {
     }
   }
 
-  const updateTicket = async (update: Partial<Tables["tickets"]["Update"]>) => {
+  const updateTicket = async (update: Partial<UpdateTicketInput>) => {
     try {
       const response = await fetch(`/api/tickets/${id}`, {
         method: "PATCH",
@@ -133,7 +127,7 @@ export function TicketDetail({ id }: TicketDetailProps) {
             value={ticket.status}
             onValueChange={(value) =>
               updateTicket({
-                status: value as Tables["tickets"]["Row"]["status"],
+                status: value as TicketStatus,
               })
             }
           >
@@ -152,7 +146,7 @@ export function TicketDetail({ id }: TicketDetailProps) {
             value={ticket.priority}
             onValueChange={(value) =>
               updateTicket({
-                priority: value as Tables["tickets"]["Row"]["priority"],
+                priority: value as TicketPriority,
               })
             }
           >

@@ -6,16 +6,7 @@ import { Checkbox } from "@/components/ui/checkbox"
 import { DataTableColumnHeader } from "./data-table-column-header"
 import { DataTableRowActions } from "./data-table-row-actions"
 import { formatDistanceToNow } from "date-fns"
-
-export type Ticket = {
-  id: string
-  title: string
-  status: "new" | "open" | "in_progress" | "resolved" | "closed"
-  team_id?: { name: string }
-  assigned_to?: { full_name: string }
-  priority: "low" | "medium" | "high" | "urgent"
-  created_at: string
-}
+import type { Ticket } from "@/types/tickets"
 
 export const columns: ColumnDef<Ticket>[] = [
   {

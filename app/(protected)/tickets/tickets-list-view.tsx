@@ -28,17 +28,16 @@ import {
 import { columns } from "./columns"
 import { DataTablePagination } from "./data-table-pagination"
 import { DataTableToolbar } from "./data-table-toolbar"
-import type { Database } from "@/types/supabase"
-import { Ticket } from "./columns"
-
-type Tables = Database["public"]["Tables"]
+import type { Ticket } from "@/types/tickets"
+import type { Team } from "@/types/teams"
+import type { Profile } from "@/types/users"
 
 type ViewMode = "list" | "board"
 
 interface TicketsListViewProps {
   tickets: Ticket[]
-  teams: Tables["teams"]["Row"][]
-  agents: Tables["profiles"]["Row"][]
+  teams: Team[]
+  agents: Profile[]
   userId: string
   searchParams: { search?: string; tab?: string }
 }

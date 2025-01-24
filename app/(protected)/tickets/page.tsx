@@ -56,9 +56,9 @@ async function TicketsContent({
       .select(
         `
         *,
-        assigned_to:profiles(*),
-        created_by:profiles(*),
-        customer_id:profiles(*),
+        assigned_to:profiles!tickets_assigned_to_fkey(*),
+        created_by:profiles!tickets_created_by_fkey(*),
+        customer_id:profiles!tickets_customer_id_fkey(*),
         team_id:teams(*)
       `
       )
@@ -70,6 +70,22 @@ async function TicketsContent({
       .in("role", ["admin", "agent"])
       .order("full_name"),
   ])
+
+  // Add error logging
+  if (ticketsResponse.error) {
+    console.error("Error fetching tickets:", ticketsResponse.error)
+  }
+  if (teamsResponse.error) {
+    console.error("Error fetching teams:", teamsResponse.error)
+  }
+  if (agentsResponse.error) {
+    console.error("Error fetching agents:", agentsResponse.error)
+  }
+
+  // Log the full response for debugging
+  console.log("Tickets Response:", ticketsResponse)
+  console.log("Teams Response:", teamsResponse)
+  console.log("Agents Response:", agentsResponse)
 
   return (
     <TicketsListView

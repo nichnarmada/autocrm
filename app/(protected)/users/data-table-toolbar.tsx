@@ -7,10 +7,11 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTableViewOptions } from "./data-table-view-options"
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
+import type { UserRole } from "@/types/users"
 
 interface Option {
   label: string
-  value: string
+  value: UserRole
   icon?: React.ComponentType<{ className?: string }>
 }
 

@@ -22,25 +22,27 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { MoreHorizontal, Pencil, Trash } from "lucide-react"
-import type { Database } from "@/types/supabase"
-
-type Tables = Database["public"]["Tables"]
-type Comment = Tables["ticket_comments"]["Row"] & {
-  user: Tables["profiles"]["Row"]
-}
+import type { TicketComment } from "@/types/ticket-comments"
+import { Profile } from "@/types/users"
 
 interface CommentSectionProps {
   ticketId: string
 }
 
+type TicketCommentWithUser = TicketComment & {
+  user: Profile
+}
+
 export function CommentSection({ ticketId }: CommentSectionProps) {
-  const [comments, setComments] = useState<Comment[]>([])
+  const [comments, setComments] = useState<TicketCommentWithUser[]>([])
   const [content, setContent] = useState("")
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [editingCommentId, setEditingCommentId] = useState<string | null>(null)
   const [editContent, setEditContent] = useState("")
   const [deleteDialogOpen, setDeleteDialogOpen] = useState(false)
-  const [commentToDelete, setCommentToDelete] = useState<Comment | null>(null)
+  const [commentToDelete, setCommentToDelete] = useState<TicketComment | null>(
+    null
+  )
   const supabase = createClient()
 
   const fetchComments = async () => {
@@ -136,7 +138,7 @@ export function CommentSection({ ticketId }: CommentSectionProps) {
     }
   }
 
-  const startEdit = (comment: Comment) => {
+  const startEdit = (comment: TicketComment) => {
     setEditingCommentId(comment.id)
     setEditContent(comment.content)
   }
@@ -146,7 +148,7 @@ export function CommentSection({ ticketId }: CommentSectionProps) {
     setEditContent("")
   }
 
-  const openDeleteDialog = (comment: Comment) => {
+  const openDeleteDialog = (comment: TicketComment) => {
     setCommentToDelete(comment)
     setDeleteDialogOpen(true)
   }

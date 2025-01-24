@@ -1,4 +1,4 @@
-import type { Database } from "../supabase"
+import type { Database } from "./supabase"
 
 type Tables = Database["public"]["Tables"]
 

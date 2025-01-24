@@ -16,10 +16,10 @@ import {
 } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Database } from "@/types/supabase"
 import { User } from "lucide-react"
 import { updateProfile } from "@/app/actions"
 import { useToast } from "@/hooks/use-toast"
+import { Profile } from "@/types/users"
 
 const profileFormSchema = z.object({
   full_name: z
@@ -38,7 +38,7 @@ const profileFormSchema = z.object({
 type ProfileFormValues = z.infer<typeof profileFormSchema>
 
 interface ProfileFormProps {
-  profile: Database["public"]["Tables"]["profiles"]["Row"]
+  profile: Profile
 }
 
 export function ProfileForm({ profile }: ProfileFormProps) {

@@ -21,7 +21,9 @@ import {
 } from "@/components/ui/table"
 import { TeamMembers } from "./team-members"
 import { EditTeamDialog } from "./edit-team-dialog"
-import type { Team, Profile, PendingChange } from "@/types/teams"
+import type { Team } from "@/types/teams"
+import type { Profile } from "@/types/users"
+import { PendingChange } from "@/app/(protected)/teams/api"
 
 interface TeamsTableProps {
   teams: Team[]

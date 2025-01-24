@@ -12,7 +12,7 @@ import {
   DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
-import { Ticket } from "./columns"
+import { Ticket } from "@/types/tickets"
 
 interface DataTableRowActionsProps {
   row: Row<Ticket>

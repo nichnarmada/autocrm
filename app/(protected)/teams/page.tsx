@@ -6,7 +6,7 @@ import { TeamsTable } from "@/components/teams/teams-table"
 import { LayoutGrid, List } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { TeamsSkeletonLoading } from "./skeleton-loading"
-import type { Team, PendingChange, ViewMode } from "@/types/teams"
+import type { Team, ViewMode } from "@/types/teams"
 import {
   fetchTeams,
   fetchAvailableMembers,
@@ -15,6 +15,7 @@ import {
   deleteTeam,
   removeMember,
   updateMembers,
+  PendingChange,
 } from "./api"
 
 export default function TeamsPage() {

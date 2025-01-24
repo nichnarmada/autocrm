@@ -25,13 +25,14 @@ import {
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
-import { Database } from "@/types/supabase"
+import type {
+  TicketPriority,
+  TicketStatus,
+  TicketCategory,
+} from "@/types/tickets"
+import type { Database } from "@/types/supabase"
 
-type Tables = Database["public"]["Tables"]
-type Team = Tables["teams"]["Row"]
-type TicketPriority = Database["public"]["Enums"]["ticket_priority"]
-type TicketStatus = Database["public"]["Enums"]["ticket_status"]
-type TicketCategory = Database["public"]["Enums"]["ticket_category"]
+type Team = Database["public"]["Tables"]["teams"]["Row"]
 
 const ticketSchema = z.object({
   title: z.string().min(1, "Title is required").max(100, "Title is too long"),

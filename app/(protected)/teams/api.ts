@@ -1,4 +1,12 @@
-import type { PendingChange } from "@/types/teams"
+import { TeamMember } from "@/types/teams"
+import { Profile } from "@/types/users"
+
+export interface PendingChange {
+  type: "add" | "remove"
+  userId: string
+  fromTeamId: string | null
+  member: Profile | (TeamMember & { profiles: Profile })
+}
 
 export async function fetchTeams() {
   const response = await fetch("/api/teams")
