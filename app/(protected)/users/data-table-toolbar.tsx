@@ -7,13 +7,18 @@ import { Button } from "@/components/ui/button"
 import { Input } from "@/components/ui/input"
 import { DataTableViewOptions } from "./data-table-view-options"
 import { DataTableFacetedFilter } from "./data-table-faceted-filter"
-import type { UserRole } from "@/types/users"
 
-const roles = [
+interface Option {
+  label: string
+  value: string
+  icon?: React.ComponentType<{ className?: string }>
+}
+
+const roles: Option[] = [
   { label: "Admin", value: "admin" },
   { label: "Agent", value: "agent" },
   { label: "Customer", value: "customer" },
-] as const
+]
 
 interface DataTableToolbarProps<TData> {
   table: Table<TData>
