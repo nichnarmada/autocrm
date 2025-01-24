@@ -45,13 +45,15 @@ export default async function TicketsPage({ params }: TicketPageProps) {
     const agents = agentsResponse.data || []
 
     return (
-      <TicketsListView
-        tickets={tickets}
-        teams={teams}
-        agents={agents}
-        userId={user.id}
-        searchParams={searchParams}
-      />
+      <div className="container">
+        <TicketsListView
+          tickets={tickets}
+          teams={teams}
+          agents={agents}
+          userId={user.id}
+          searchParams={searchParams}
+        />
+      </div>
     )
   } catch (error) {
     console.error("[Page] Error fetching data:", error)

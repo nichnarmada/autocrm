@@ -84,7 +84,7 @@ export default async function ProtectedLayout({
       <AppSidebar sidebarItems={filteredItems} signOut={signOut} />
 
       {/* Main content */}
-      <main className="flex-1 overflow-y-auto p-6">{children}</main>
+      <main className="flex-1 overflow-y-auto py-6">{children}</main>
     </SidebarProvider>
   )
 }
