@@ -12,7 +12,7 @@ import {
 
 export function TicketListSkeleton() {
   return (
-    <div className="container">
+    <>
       <div className="mb-6 flex items-center justify-between">
         <Skeleton className="h-8 w-32" /> {/* "Tickets" heading */}
         <div className="flex items-center gap-4">
@@ -107,6 +107,6 @@ export function TicketListSkeleton() {
           </div>
         </div>
       </div>
-    </div>
+    </>
   )
 }
