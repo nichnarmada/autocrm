@@ -14,10 +14,14 @@ import { Label } from "@/components/ui/label"
 import { UserPlus } from "lucide-react"
 
 interface InviteUserDialogProps {
+  onInvite: (email: string) => Promise<void>
   onSuccess?: () => void
 }
 
-export function InviteUserDialog({ onSuccess }: InviteUserDialogProps) {
+export function InviteUserDialog({
+  onInvite,
+  onSuccess,
+}: InviteUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -27,22 +31,7 @@ export function InviteUserDialog({ onSuccess }: InviteUserDialogProps) {
     setIsLoading(true)
 
     try {
-      const response = await fetch("/api/users/invite", {
-        method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-        },
-        body: JSON.stringify({
-          email,
-          role: "agent", // Always set role to agent
-        }),
-      })
-
-      if (!response.ok) {
-        const data = await response.json()
-        throw new Error(data.error)
-      }
-
+      await onInvite(email)
       setOpen(false)
       setEmail("")
       onSuccess?.()

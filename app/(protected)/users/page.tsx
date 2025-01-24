@@ -78,6 +78,24 @@ export default function UsersPage() {
     }
   }
 
+  const inviteUser = async (email: string) => {
+    const response = await fetch("/api/users/invite", {
+      method: "POST",
+      headers: {
+        "Content-Type": "application/json",
+      },
+      body: JSON.stringify({
+        email,
+        role: "agent", // Always set role to agent
+      }),
+    })
+
+    if (!response.ok) {
+      const data = await response.json()
+      throw new Error(data.error)
+    }
+  }
+
   useEffect(() => {
     checkAdminAccess()
     fetchUsers()
@@ -182,7 +200,7 @@ export default function UsersPage() {
     <div className="container">
       <div className="mb-6 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Users</h1>
-        <InviteUserDialog onSuccess={fetchUsers} />
+        <InviteUserDialog onInvite={inviteUser} onSuccess={fetchUsers} />
       </div>
 
       <div className="mb-6 flex justify-between">
