@@ -136,10 +136,10 @@ export const resetPasswordAction = async (formData: FormData) => {
   return redirect("/sign-in?message=Password updated successfully")
 }
 
-export const signOutAction = async () => {
+export async function signOut() {
   const supabase = await createClient()
   await supabase.auth.signOut()
-  return redirect("/sign-in")
+  redirect("/sign-in")
 }
 
 export async function setupProfileAction(formData: FormData) {

@@ -105,7 +105,7 @@ export function TicketDetail({ id }: TicketDetailProps) {
 
   if (isLoading) {
     return (
-      <div className="space-y-4">
+      <div className="container space-y-4">
         <Skeleton className="h-8 w-48" />
         <Card>
           <CardHeader>
@@ -125,7 +125,7 @@ export function TicketDetail({ id }: TicketDetailProps) {
   }
 
   return (
-    <div className="container mx-auto flex h-[calc(100vh-4rem)] flex-col p-4">
+    <div className="container flex h-[calc(100vh-4rem)] flex-col">
       <div className="mb-4 flex items-center justify-between">
         <h1 className="text-2xl font-bold">Ticket #{id}</h1>
         <div className="flex items-center gap-2">

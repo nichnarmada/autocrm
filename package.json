@@ -8,7 +8,7 @@
     "lint:fix": "next lint --fix",
     "format": "prettier --write .",
     "format:check": "prettier --check .",
-    "generate-types": "supabase gen types typescript --project-id odzdwtylmyushzrulrfb > types/supabase.ts"
+    "generate-types": "supabase gen types typescript --project-id njirsahdvpngmulpwpnb > types/supabase.ts"
   },
   "dependencies": {
     "@hookform/resolvers": "^3.10.0",
