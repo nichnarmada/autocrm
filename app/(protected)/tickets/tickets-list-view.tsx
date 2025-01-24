@@ -1,56 +1,46 @@
 "use client"
 
-import { TicketList } from "@/components/tickets/ticket-list"
-import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
-import { Input } from "@/components/ui/input"
-import { Suspense, useState, useEffect } from "react"
+import { useState } from "react"
+import {
+  ColumnFiltersState,
+  SortingState,
+  VisibilityState,
+  flexRender,
+  getCoreRowModel,
+  getFacetedRowModel,
+  getFacetedUniqueValues,
+  getFilteredRowModel,
+  getPaginationRowModel,
+  getSortedRowModel,
+  useReactTable,
+} from "@tanstack/react-table"
+import { List, LayoutGrid } from "lucide-react"
+import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table"
+
+import { columns } from "./columns"
+import { DataTablePagination } from "./data-table-pagination"
+import { DataTableToolbar } from "./data-table-toolbar"
 import type { Database } from "@/types/supabase"
-import { Skeleton } from "@/components/ui/skeleton"
+import { Ticket } from "./columns"
 
 type Tables = Database["public"]["Tables"]
-type Ticket = Tables["tickets"]["Row"] & {
-  assigned_to: Tables["profiles"]["Row"] | null
-  created_by: Tables["profiles"]["Row"] | null
-  customer_id: Tables["profiles"]["Row"] | null
-  team_id: Tables["teams"]["Row"] | null
-}
+
+type ViewMode = "list" | "board"
 
 interface TicketsListViewProps {
   tickets: Ticket[]
   teams: Tables["teams"]["Row"][]
   agents: Tables["profiles"]["Row"][]
   userId: string
-  searchParams: { tab?: string; search?: string }
-}
-
-function TicketListSkeleton() {
-  return (
-    <div className="space-y-4">
-      <div className="rounded-lg border">
-        <div className="border-b">
-          <div className="grid grid-cols-5 p-4">
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        </div>
-        {[...Array(5)].map((_, i) => (
-          <div key={i} className="grid grid-cols-5 border-b p-4 last:border-0">
-            <Skeleton className="h-4 w-48" />
-            <Skeleton className="h-4 w-64" />
-            <div className="flex gap-2">
-              <Skeleton className="h-6 w-20" />
-              <Skeleton className="h-6 w-20" />
-            </div>
-            <Skeleton className="h-4 w-32" />
-            <Skeleton className="h-4 w-24" />
-          </div>
-        ))}
-      </div>
-    </div>
-  )
+  searchParams: { search?: string; tab?: string }
 }
 
 export function TicketsListView({
@@ -60,100 +50,118 @@ export function TicketsListView({
   userId,
   searchParams,
 }: TicketsListViewProps) {
-  const [filteredTickets, setFilteredTickets] = useState(initialTickets)
-  const [searchQuery, setSearchQuery] = useState("")
+  const [viewMode, setViewMode] = useState<ViewMode>("list")
+  const [rowSelection, setRowSelection] = useState({})
+  const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
+  const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
+  const [sorting, setSorting] = useState<SortingState>([])
 
-  // Filter tickets based on search and tab
-  useEffect(() => {
-    let filtered = initialTickets
-
-    // Apply search filter
-    if (searchQuery) {
-      filtered = filtered.filter(
-        (ticket) =>
-          ticket.title?.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          ticket.description?.toLowerCase().includes(searchQuery.toLowerCase())
-      )
-    }
-
-    // Apply tab filter
-    switch (searchParams.tab) {
-      case "assigned":
-        filtered = filtered.filter(
-          (ticket) => ticket.assigned_to?.id === userId
-        )
-        break
-      case "unassigned":
-        filtered = filtered.filter((ticket) => !ticket.assigned_to)
-        break
-      case "closed":
-        filtered = filtered.filter((ticket) => ticket.status === "closed")
-        break
-      default:
-        filtered = filtered.filter((ticket) => ticket.status !== "closed")
-    }
-
-    setFilteredTickets(filtered)
-  }, [initialTickets, searchQuery, searchParams, userId])
+  const table = useReactTable({
+    data: initialTickets,
+    columns,
+    state: {
+      sorting,
+      columnVisibility,
+      rowSelection,
+      columnFilters,
+    },
+    enableRowSelection: true,
+    onRowSelectionChange: setRowSelection,
+    onSortingChange: setSorting,
+    onColumnFiltersChange: setColumnFilters,
+    onColumnVisibilityChange: setColumnVisibility,
+    getCoreRowModel: getCoreRowModel(),
+    getFilteredRowModel: getFilteredRowModel(),
+    getPaginationRowModel: getPaginationRowModel(),
+    getSortedRowModel: getSortedRowModel(),
+    getFacetedRowModel: getFacetedRowModel(),
+    getFacetedUniqueValues: getFacetedUniqueValues(),
+  })
 
   return (
-    <div className="space-y-4">
-      <div className="flex items-center justify-between">
-        <Tabs defaultValue="all" className="w-full">
-          <div className="flex items-center justify-between">
-            <TabsList>
-              <TabsTrigger value="all">All</TabsTrigger>
-              <TabsTrigger value="assigned">Assigned to me</TabsTrigger>
-              <TabsTrigger value="unassigned">Unassigned</TabsTrigger>
-              <TabsTrigger value="closed">Closed</TabsTrigger>
-            </TabsList>
-            <Input
-              placeholder="Search tickets..."
-              className="w-64"
-              name="search"
-              defaultValue={searchParams.search}
-              onChange={(e) => setSearchQuery(e.target.value)}
-            />
-          </div>
-
-          <TabsContent value="all" className="mt-4">
-            <Suspense fallback={<TicketListSkeleton />}>
-              <TicketList
-                tickets={filteredTickets}
-                teams={teams}
-                agents={agents}
-              />
-            </Suspense>
-          </TabsContent>
-          <TabsContent value="assigned" className="mt-4">
-            <Suspense fallback={<TicketListSkeleton />}>
-              <TicketList
-                tickets={filteredTickets}
-                teams={teams}
-                agents={agents}
-              />
-            </Suspense>
-          </TabsContent>
-          <TabsContent value="unassigned" className="mt-4">
-            <Suspense fallback={<TicketListSkeleton />}>
-              <TicketList
-                tickets={filteredTickets}
-                teams={teams}
-                agents={agents}
-              />
-            </Suspense>
-          </TabsContent>
-          <TabsContent value="closed" className="mt-4">
-            <Suspense fallback={<TicketListSkeleton />}>
-              <TicketList
-                tickets={filteredTickets}
-                teams={teams}
-                agents={agents}
-              />
-            </Suspense>
-          </TabsContent>
+    <>
+      <div className="mb-4 flex items-center gap-4">
+        <Tabs
+          value={viewMode}
+          onValueChange={(v) => {
+            setViewMode(v as ViewMode)
+          }}
+        >
+          <TabsList>
+            <TabsTrigger value="list">
+              <List className="mr-2 h-4 w-4" />
+              List
+            </TabsTrigger>
+            <TabsTrigger value="board">
+              <LayoutGrid className="mr-2 h-4 w-4" />
+              Board
+            </TabsTrigger>
+          </TabsList>
         </Tabs>
       </div>
-    </div>
+
+      {viewMode === "list" ? (
+        <div className="space-y-4">
+          <DataTableToolbar table={table} />
+          <div className="rounded-md border">
+            <Table>
+              <TableHeader>
+                {table.getHeaderGroups().map((headerGroup) => (
+                  <TableRow key={headerGroup.id}>
+                    {headerGroup.headers.map((header) => {
+                      return (
+                        <TableHead key={header.id} colSpan={header.colSpan}>
+                          {header.isPlaceholder
+                            ? null
+                            : flexRender(
+                                header.column.columnDef.header,
+                                header.getContext()
+                              )}
+                        </TableHead>
+                      )
+                    })}
+                  </TableRow>
+                ))}
+              </TableHeader>
+              <TableBody>
+                {table.getRowModel().rows?.length ? (
+                  table.getRowModel().rows.map((row) => (
+                    <TableRow
+                      key={row.id}
+                      data-state={row.getIsSelected() && "selected"}
+                    >
+                      {row.getVisibleCells().map((cell) => (
+                        <TableCell key={cell.id}>
+                          {flexRender(
+                            cell.column.columnDef.cell,
+                            cell.getContext()
+                          )}
+                        </TableCell>
+                      ))}
+                    </TableRow>
+                  ))
+                ) : (
+                  <TableRow>
+                    <TableCell
+                      colSpan={columns.length}
+                      className="h-24 text-center"
+                    >
+                      No results.
+                    </TableCell>
+                  </TableRow>
+                )}
+              </TableBody>
+            </Table>
+          </div>
+          <DataTablePagination table={table} />
+        </div>
+      ) : (
+        <div className="rounded-lg border p-8 text-center">
+          <p className="text-sm text-muted-foreground">
+            Board view with drag and drop coming soon...
+          </p>
+        </div>
+      )}
+    </>
   )
 }

@@ -1,23 +1,55 @@
 import { createClient } from "@/utils/supabase/server"
-import { TicketsListView } from "./tickets-list-view"
 import { redirect } from "next/navigation"
+import { TicketsListView } from "./tickets-list-view"
+import { TicketListSkeleton } from "./ticket-list-skeleton"
+import { Suspense } from "react"
 
-type TicketPageProps = {
+type TicketsPageProps = {
   params: Promise<{ tab?: string; search?: string }>
 }
 
-export default async function TicketsPage({ params }: TicketPageProps) {
+export default async function TicketsPage({ params }: TicketsPageProps) {
+  const supabase = await createClient()
+
+  // Get current user
+  const {
+    data: { user },
+  } = await supabase.auth.getUser()
+  if (!user) {
+    redirect("/sign-in")
+  }
+
+  return (
+    <div className="container">
+      <div className="mb-6 flex items-center justify-between">
+        <h1 className="text-2xl font-bold">Tickets</h1>
+      </div>
+
+      <Suspense fallback={<TicketListSkeleton />}>
+        {/* Move the data fetching and TicketsListView into a new component */}
+        <TicketsContent params={params} />
+      </Suspense>
+    </div>
+  )
+}
+
+// Create this component in the same file
+async function TicketsContent({
+  params,
+}: {
+  params: Promise<{ tab?: string; search?: string }>
+}) {
   const searchParams = await params
   const supabase = await createClient()
 
   const {
     data: { user },
-    error,
   } = await supabase.auth.getUser()
-  if (error || !user) {
+  if (!user) {
     redirect("/sign-in")
   }
 
+  // Fetch data in parallel
   const [ticketsResponse, teamsResponse, agentsResponse] = await Promise.all([
     supabase
       .from("tickets")
@@ -39,19 +71,13 @@ export default async function TicketsPage({ params }: TicketPageProps) {
       .order("full_name"),
   ])
 
-  const tickets = ticketsResponse.data || []
-  const teams = teamsResponse.data || []
-  const agents = agentsResponse.data || []
-
   return (
-    <div className="container">
-      <TicketsListView
-        tickets={tickets}
-        teams={teams}
-        agents={agents}
-        userId={user.id}
-        searchParams={searchParams}
-      />
-    </div>
+    <TicketsListView
+      tickets={ticketsResponse.data || []}
+      teams={teamsResponse.data || []}
+      agents={agentsResponse.data || []}
+      userId={user.id}
+      searchParams={searchParams}
+    />
   )
 }

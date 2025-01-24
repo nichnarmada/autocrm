@@ -22,18 +22,18 @@
 
 ### Team Management
 
-- [ ] Basic team structure
+- [x] Basic team structure
   - [x] Create teams
-  - [ ] Add members
-  - [ ] Assign roles
+  - [x] Add members
+  - [x] Assign roles
 
 ## Phase 1 Requirements
 
 ### Enhanced Ticket Management
 
-- [ ] Advanced filtering
-- [ ] Search functionality
-- [ ] Priority levels
+- [x] Advanced filtering
+- [x] Search functionality
+- [x] Priority levels
 - [ ] Custom fields
 - [ ] File attachments
 
