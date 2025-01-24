@@ -1,55 +1,62 @@
 import { createClient } from "@/utils/supabase/server"
 import { NextRequest, NextResponse } from "next/server"
+import type { Database } from "@/types/supabase"
+
+type TicketRow = Database["public"]["Tables"]["tickets"]["Row"]
+type TicketUpdate = Database["public"]["Tables"]["tickets"]["Update"]
 
 // GET /api/tickets/[id]
 export async function GET(request: NextRequest) {
   try {
-    const ticketId = request.nextUrl.pathname.split("/")[3]
     const supabase = await createClient()
+    const ticketId = request.nextUrl.pathname.split("/")[3]
 
-    // First get the ticket with basic relations
-    const { data, error } = await supabase
+    const { data: ticket, error } = await supabase
       .from("tickets")
       .select(
         `
         *,
-        assigned_to:profiles(*),
-        created_by:profiles(*),
-        customer_id:profiles(*),
-        team_id:teams(*)
+        assigned_to:profiles!tickets_assigned_to_fkey(
+          id,
+          full_name,
+          email,
+          avatar_url
+        ),
+        created_by:profiles!tickets_created_by_fkey(
+          id,
+          full_name,
+          email,
+          avatar_url
+        ),
+        customer_id:profiles!tickets_customer_id_fkey(
+          id,
+          full_name,
+          email,
+          avatar_url
+        ),
+        team_id:teams(
+          id,
+          name,
+          description
+        )
       `
       )
       .eq("id", ticketId)
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error("[API] Error fetching ticket:", error)
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      )
+    }
 
-    // Then get comments separately
-    const { data: comments, error: commentsError } = await supabase
-      .from("ticket_comments")
-      .select("*, user:profiles(*)")
-      .eq("ticket_id", ticketId)
-      .order("created_at", { ascending: true })
-
-    if (commentsError) throw commentsError
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...data,
-        ticket_comments: comments,
-      },
-    })
+    return NextResponse.json({ success: true, data: ticket })
   } catch (error) {
-    console.error("[TICKET_GET]", error)
+    console.error("[API] Error in ticket route:", error)
     return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "TICKET_GET_ERROR",
-          message: "Failed to fetch ticket",
-        },
-      },
+      { success: false, error: "Internal server error" },
       { status: 500 }
     )
   }
@@ -60,51 +67,55 @@ export async function PATCH(request: NextRequest) {
   try {
     const supabase = await createClient()
     const ticketId = request.nextUrl.pathname.split("/")[3]
-    const json = await request.json()
+    const update: TicketUpdate = await request.json()
 
-    const { data, error } = await supabase
+    const { data: ticket, error } = await supabase
       .from("tickets")
-      .update(json)
+      .update(update)
       .eq("id", ticketId)
       .select(
         `
         *,
-        assigned_to:profiles(*),
-        created_by:profiles(*),
-        customer_id:profiles(*),
-        team_id:teams(*)
+        assigned_to:profiles!tickets_assigned_to_fkey(
+          id,
+          full_name,
+          email,
+          avatar_url
+        ),
+        created_by:profiles!tickets_created_by_fkey(
+          id,
+          full_name,
+          email,
+          avatar_url
+        ),
+        customer_id:profiles!tickets_customer_id_fkey(
+          id,
+          full_name,
+          email,
+          avatar_url
+        ),
+        team_id:teams(
+          id,
+          name,
+          description
+        )
       `
       )
       .single()
 
-    if (error) throw error
+    if (error) {
+      console.error("[API] Error updating ticket:", error)
+      return NextResponse.json(
+        { success: false, error: error.message },
+        { status: 500 }
+      )
+    }
 
-    // Get comments separately
-    const { data: comments, error: commentsError } = await supabase
-      .from("ticket_comments")
-      .select("*, user:profiles(*)")
-      .eq("ticket_id", ticketId)
-      .order("created_at", { ascending: true })
-
-    if (commentsError) throw commentsError
-
-    return NextResponse.json({
-      success: true,
-      data: {
-        ...data,
-        ticket_comments: comments,
-      },
-    })
+    return NextResponse.json({ success: true, data: ticket })
   } catch (error) {
-    console.error("[TICKET_PATCH]", error)
+    console.error("[API] Error in ticket route:", error)
     return NextResponse.json(
-      {
-        success: false,
-        error: {
-          code: "TICKET_PATCH_ERROR",
-          message: "Failed to update ticket",
-        },
-      },
+      { success: false, error: "Internal server error" },
       { status: 500 }
     )
   }

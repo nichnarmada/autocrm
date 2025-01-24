@@ -9,7 +9,6 @@ import {
   DropdownMenu,
   DropdownMenuContent,
   DropdownMenuItem,
-  DropdownMenuSeparator,
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu"
 import { Ticket } from "@/types/tickets"
@@ -35,17 +34,16 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
       </DropdownMenuTrigger>
       <DropdownMenuContent align="end" className="w-[160px]">
         <DropdownMenuItem onClick={() => router.push(`/tickets/${ticket.id}`)}>
-          <Pencil className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+          <Pencil className="mr-2 h-3.5 w-3.5" />
           Edit
         </DropdownMenuItem>
-        <DropdownMenuSeparator />
         <DropdownMenuItem
           onClick={() => {
             // TODO: Implement delete functionality
           }}
           className="text-destructive focus:text-destructive"
         >
-          <Trash className="mr-2 h-3.5 w-3.5 text-muted-foreground/70" />
+          <Trash className="mr-2 h-3.5 w-3.5" />
           Delete
         </DropdownMenuItem>
       </DropdownMenuContent>

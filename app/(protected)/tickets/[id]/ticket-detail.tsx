@@ -1,7 +1,6 @@
 "use client"
 
 import { useEffect, useState } from "react"
-import { useRouter } from "next/navigation"
 import { createClient } from "@/utils/supabase/client"
 import { Badge } from "@/components/ui/badge"
 import {
@@ -18,7 +17,6 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select"
-import { Skeleton } from "@/components/ui/skeleton"
 import { CommentSection } from "./comment-section"
 import type {
   Ticket,
@@ -28,35 +26,20 @@ import type {
 } from "@/types/tickets"
 
 interface TicketDetailProps {
-  id: string
+  ticket: Ticket
+  userId: string
 }
 
-export function TicketDetail({ id }: TicketDetailProps) {
-  const router = useRouter()
-  const [ticket, setTicket] = useState<Ticket | null>(null)
-  const [isLoading, setIsLoading] = useState(true)
+export function TicketDetail({
+  ticket: initialTicket,
+  userId,
+}: TicketDetailProps) {
+  const [ticket, setTicket] = useState(initialTicket)
   const supabase = createClient()
-
-  const fetchTicket = async () => {
-    try {
-      const response = await fetch(`/api/tickets/${id}`)
-      const json = await response.json()
-
-      if (json.success) {
-        setTicket(json.data)
-      } else {
-        console.error("[Frontend] Error fetching ticket:", json.error)
-      }
-    } catch (error) {
-      console.error("[Frontend] Error fetching ticket:", error)
-    } finally {
-      setIsLoading(false)
-    }
-  }
 
   const updateTicket = async (update: Partial<UpdateTicketInput>) => {
     try {
-      const response = await fetch(`/api/tickets/${id}`, {
+      const response = await fetch(`/api/tickets/${ticket.id}`, {
         method: "PATCH",
         body: JSON.stringify(update),
       })
@@ -73,21 +56,19 @@ export function TicketDetail({ id }: TicketDetailProps) {
   }
 
   useEffect(() => {
-    fetchTicket()
-
     // Set up real-time subscription
     const channel = supabase
-      .channel(`ticket-${id}`)
+      .channel(`ticket-${ticket.id}`)
       .on(
         "postgres_changes",
         {
           event: "*",
           schema: "public",
           table: "tickets",
-          filter: `id=eq.${id}`,
+          filter: `id=eq.${ticket.id}`,
         },
-        () => {
-          fetchTicket()
+        (payload) => {
+          setTicket((current) => ({ ...current, ...payload.new }))
         }
       )
       .subscribe()
@@ -95,33 +76,12 @@ export function TicketDetail({ id }: TicketDetailProps) {
     return () => {
       supabase.removeChannel(channel)
     }
-  }, [id])
-
-  if (isLoading) {
-    return (
-      <div className="container space-y-4">
-        <Skeleton className="h-8 w-48" />
-        <Card>
-          <CardHeader>
-            <Skeleton className="h-6 w-full max-w-sm" />
-            <Skeleton className="h-4 w-32" />
-          </CardHeader>
-          <CardContent>
-            <Skeleton className="h-24 w-full" />
-          </CardContent>
-        </Card>
-      </div>
-    )
-  }
-
-  if (!ticket) {
-    return <div>Ticket not found</div>
-  }
+  }, [ticket.id])
 
   return (
-    <div className="container flex h-[calc(100vh-4rem)] flex-col">
+    <div className="flex h-[calc(100vh-4rem)] flex-col">
       <div className="mb-4 flex items-center justify-between">
-        <h1 className="text-2xl font-bold">Ticket #{id}</h1>
+        <h1 className="text-2xl font-bold">Ticket #{ticket.id}</h1>
         <div className="flex items-center gap-2">
           <Select
             value={ticket.status}
@@ -228,7 +188,7 @@ export function TicketDetail({ id }: TicketDetailProps) {
       </div>
 
       <div className="h-[40vh]">
-        <CommentSection ticketId={id} />
+        <CommentSection ticketId={ticket.id} />
       </div>
     </div>
   )
