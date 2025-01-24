@@ -1,7 +1,7 @@
 "use client"
 
 import { Row } from "@tanstack/react-table"
-import { MoreHorizontal, Pencil, Trash, Eye } from "lucide-react"
+import { MoreHorizontal, Pencil, Trash } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
