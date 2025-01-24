@@ -42,100 +42,10 @@ export type Database = {
         }
         Relationships: []
       }
-      routing_rules: {
-        Row: {
-          category: Database["public"]["Enums"]["ticket_category"] | null
-          conditions: Json | null
-          created_at: string | null
-          id: string
-          priority: Database["public"]["Enums"]["ticket_priority"] | null
-          team_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          category?: Database["public"]["Enums"]["ticket_category"] | null
-          conditions?: Json | null
-          created_at?: string | null
-          id?: string
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
-          team_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          category?: Database["public"]["Enums"]["ticket_category"] | null
-          conditions?: Json | null
-          created_at?: string | null
-          id?: string
-          priority?: Database["public"]["Enums"]["ticket_priority"] | null
-          team_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "routing_rules_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
-      team_capacity: {
-        Row: {
-          agent_id: string
-          created_at: string | null
-          current_tickets: number
-          id: string
-          is_available: boolean
-          last_assigned: string | null
-          max_tickets: number
-          team_id: string
-          updated_at: string | null
-        }
-        Insert: {
-          agent_id: string
-          created_at?: string | null
-          current_tickets?: number
-          id?: string
-          is_available?: boolean
-          last_assigned?: string | null
-          max_tickets?: number
-          team_id: string
-          updated_at?: string | null
-        }
-        Update: {
-          agent_id?: string
-          created_at?: string | null
-          current_tickets?: number
-          id?: string
-          is_available?: boolean
-          last_assigned?: string | null
-          max_tickets?: number
-          team_id?: string
-          updated_at?: string | null
-        }
-        Relationships: [
-          {
-            foreignKeyName: "team_capacity_agent_id_fkey"
-            columns: ["agent_id"]
-            isOneToOne: false
-            referencedRelation: "profiles"
-            referencedColumns: ["id"]
-          },
-          {
-            foreignKeyName: "team_capacity_team_id_fkey"
-            columns: ["team_id"]
-            isOneToOne: false
-            referencedRelation: "teams"
-            referencedColumns: ["id"]
-          },
-        ]
-      }
       team_members: {
         Row: {
           created_at: string | null
           id: string
-          role: string
           team_id: string
           updated_at: string | null
           user_id: string
@@ -143,7 +53,6 @@ export type Database = {
         Insert: {
           created_at?: string | null
           id?: string
-          role?: string
           team_id: string
           updated_at?: string | null
           user_id: string
@@ -151,7 +60,6 @@ export type Database = {
         Update: {
           created_at?: string | null
           id?: string
-          role?: string
           team_id?: string
           updated_at?: string | null
           user_id?: string
@@ -162,6 +70,13 @@ export type Database = {
             columns: ["team_id"]
             isOneToOne: false
             referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_members_user_id_fkey"
+            columns: ["user_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
             referencedColumns: ["id"]
           },
         ]
@@ -286,6 +201,20 @@ export type Database = {
         }
         Relationships: [
           {
+            foreignKeyName: "tickets_assigned_to_fkey"
+            columns: ["assigned_to"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "tickets_created_by_fkey"
+            columns: ["created_by"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
             foreignKeyName: "tickets_customer_id_fkey"
             columns: ["customer_id"]
             isOneToOne: false
@@ -306,20 +235,7 @@ export type Database = {
       [_ in never]: never
     }
     Functions: {
-      find_suitable_agent: {
-        Args: {
-          p_team_id: string
-        }
-        Returns: string
-      }
-      find_suitable_team: {
-        Args: {
-          p_category: Database["public"]["Enums"]["ticket_category"]
-          p_priority: Database["public"]["Enums"]["ticket_priority"]
-          p_metadata: Json
-        }
-        Returns: string
-      }
+      [_ in never]: never
     }
     Enums: {
       ticket_category:

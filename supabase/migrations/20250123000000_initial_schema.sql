@@ -1,26 +1,21 @@
 -- Enable required extensions
-create extension if not exists "pg_graphql";
-create extension if not exists "pg_stat_statements";
-create extension if not exists "pgcrypto";
-create extension if not exists "pgjwt";
 create extension if not exists "uuid-ossp";
 
--- Create enums
+-- Create enum types
 create type user_role as enum ('admin', 'agent', 'customer');
 create type ticket_status as enum ('new', 'open', 'in_progress', 'resolved', 'closed');
 create type ticket_priority as enum ('low', 'medium', 'high', 'urgent');
-create type ticket_category as enum ('bug', 'feature_request', 'support', 'question', 'documentation', 'enhancement', 'other');
+create type ticket_category as enum (
+  'bug',
+  'feature_request',
+  'support',
+  'question',
+  'documentation',
+  'enhancement',
+  'other'
+);
 
--- Create updated_at trigger function
-create or replace function handle_updated_at()
-returns trigger as $$
-begin
-  new.updated_at = now();
-  return new;
-end;
-$$ language plpgsql;
-
--- Create handle_new_user function with proper role casting
+-- Create handle_new_user function
 create or replace function handle_new_user()
 returns trigger
 security definer
@@ -92,75 +87,57 @@ create trigger on_auth_user_created
   after insert on auth.users
   for each row execute function handle_new_user();
 
--- Create tables
+-- Create profiles table (linked to auth.users)
 create table profiles (
-  id uuid primary key references auth.users on delete cascade,
+  id uuid references auth.users on delete cascade primary key,
+  email text,
   full_name text,
   avatar_url text,
-  email text,
   role user_role not null default 'customer',
   is_profile_setup boolean not null default false,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
+-- Create teams table
 create table teams (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid default uuid_generate_v4() primary key,
   name text not null,
   description text,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
+-- Create team_members table
 create table team_members (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid default uuid_generate_v4() primary key,
   team_id uuid references teams on delete cascade not null,
   user_id uuid references profiles(id) on delete cascade not null,
-  role text not null default 'member',
   created_at timestamptz default now(),
   updated_at timestamptz default now(),
-  unique(team_id, user_id)
+  unique (team_id, user_id)
 );
 
-create table routing_rules (
-  id uuid primary key default uuid_generate_v4(),
-  team_id uuid references teams on delete cascade not null,
-  category ticket_category,
-  priority ticket_priority,
-  conditions jsonb,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now()
-);
-
-create table team_capacity (
-  id uuid primary key default uuid_generate_v4(),
-  team_id uuid references teams on delete cascade not null,
-  agent_id uuid references profiles(id) on delete cascade not null,
-  max_tickets integer not null default 10,
-  created_at timestamptz default now(),
-  updated_at timestamptz default now(),
-  unique(team_id, agent_id)
-);
-
+-- Create tickets table
 create table tickets (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid default uuid_generate_v4() primary key,
   title text not null,
   description text,
   status ticket_status not null default 'new',
   priority ticket_priority not null default 'medium',
-  category ticket_category not null default 'bug',
+  category ticket_category not null default 'other',
   created_by uuid references profiles(id) on delete set null,
   assigned_to uuid references profiles(id) on delete set null,
-  team_id uuid references teams on delete set null,
+  team_id uuid references teams(id) on delete set null,
   customer_id uuid references profiles(id) on delete set null,
   created_on_behalf boolean default false,
-  metadata jsonb,
   created_at timestamptz default now(),
   updated_at timestamptz default now()
 );
 
+-- Create ticket_comments table
 create table ticket_comments (
-  id uuid primary key default uuid_generate_v4(),
+  id uuid default uuid_generate_v4() primary key,
   ticket_id uuid references tickets on delete cascade not null,
   user_id uuid references profiles(id) on delete set null,
   content text not null,
@@ -170,337 +147,282 @@ create table ticket_comments (
   updated_at timestamptz default now()
 );
 
--- Create triggers for updated_at
-create trigger set_updated_at
-  before update on profiles
-  for each row execute function handle_updated_at();
-
-create trigger set_updated_at
-  before update on teams
-  for each row execute function handle_updated_at();
-
-create trigger set_updated_at
-  before update on team_members
-  for each row execute function handle_updated_at();
-
-create trigger set_updated_at
-  before update on routing_rules
-  for each row execute function handle_updated_at();
-
-create trigger set_updated_at
-  before update on team_capacity
-  for each row execute function handle_updated_at();
-
-create trigger set_updated_at
-  before update on tickets
-  for each row execute function handle_updated_at();
-
-create trigger set_updated_at
-  before update on ticket_comments
-  for each row execute function handle_updated_at();
-
--- Create routing functions
-create or replace function find_suitable_team(
-  p_category ticket_category,
-  p_priority ticket_priority,
-  p_metadata jsonb
-) returns uuid as $$
-declare
-  v_team_id uuid;
-begin
-  -- Find matching team based on routing rules
-  select team_id into v_team_id
-  from routing_rules
-  where (category is null or category = p_category)
-    and (priority is null or priority = p_priority)
-  limit 1;
-
-  return v_team_id;
-end;
-$$ language plpgsql security definer;
-
-create or replace function find_suitable_agent(p_team_id uuid)
-returns uuid as $$
-declare
-  v_agent_id uuid;
-begin
-  -- Find available agent with least current tickets
-  select agent_id into v_agent_id
-  from team_capacity
-  where team_id = p_team_id
-    and current_tickets < max_tickets
-  order by current_tickets asc
-  limit 1;
-
-  return v_agent_id;
-end;
-$$ language plpgsql security definer;
-
-create or replace function auto_assign_ticket()
-returns trigger as $$
-declare
-  v_team_id uuid;
-  v_agent_id uuid;
-begin
-  -- Set customer_id if not set (for customer-created tickets)
-  if new.customer_id is null and new.created_on_behalf = false then
-    new.customer_id := new.created_by;
-  end if;
-
-  -- Find suitable team
-  v_team_id := find_suitable_team(new.category, new.priority, new.metadata::jsonb);
-  
-  if v_team_id is not null then
-    -- Update ticket with team
-    new.team_id := v_team_id;
-    
-    -- Find suitable agent
-    v_agent_id := find_suitable_agent(v_team_id);
-    
-    if v_agent_id is not null then
-      -- Assign to agent
-      new.assigned_to := v_agent_id;
-      new.status := 'open'::ticket_status;
-      
-      -- Update agent capacity
-      update team_capacity
-      set current_tickets = current_tickets + 1
-      where team_id = v_team_id and agent_id = v_agent_id;
-    end if;
-  end if;
-
-  return new;
-end;
-$$ language plpgsql security definer;
-
--- Create trigger for auto-assignment
-create trigger ticket_auto_assign
-  before insert on tickets
-  for each row execute function auto_assign_ticket();
-
--- Enable RLS
+-- Enable Row Level Security (RLS)
 alter table profiles enable row level security;
 alter table teams enable row level security;
 alter table team_members enable row level security;
-alter table routing_rules enable row level security;
-alter table team_capacity enable row level security;
 alter table tickets enable row level security;
 alter table ticket_comments enable row level security;
 
--- Create RLS policies
--- Profile policies
-create policy "basic_profile_select"
-  on profiles for select
-  using (
-    -- Users can always read their own profile
-    auth.uid() = id
-    -- Admins and agents can read all profiles (using JWT claim)
-    or auth.jwt()->>'role' in ('admin', 'agent')
+-- Create admin check function
+create or replace function auth.is_admin()
+returns boolean
+language sql
+security definer
+as $$
+  select exists (
+    select 1
+    from auth.users
+    join profiles on auth.users.id = profiles.id
+    where auth.users.id = auth.uid()
+    and profiles.role = 'admin'
   );
+$$;
 
-create policy "basic_profile_update"
-  on profiles for update
-  using (auth.uid() = id);
+-- Create RLS Policies
+
+-- Profile policies
+create policy "can_view_own_profile" 
+on profiles for select 
+using (auth.uid() = id or auth.is_admin());
+
+create policy "can_update_own_profile" 
+on profiles for update 
+using (auth.uid() = id) 
+with check (auth.uid() = id);
+
+create policy "can_insert_own_profile" 
+on profiles for insert 
+with check (auth.uid() = id);
+
+create policy "can_delete_own_profile" 
+on profiles for delete 
+using (auth.uid() = id);
 
 -- Team policies
-create policy "View teams"
-  on teams for select
-  using (
-    exists (
-      select 1 from profiles
-      where profiles.id = auth.uid()
-      and profiles.role::text in ('admin', 'agent')
-    )
-  );
+create policy "View teams" 
+on teams for select 
+using (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role::text in ('admin', 'agent')
+  )
+);
 
-create policy "Admins can create teams"
-  on teams for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where profiles.id = auth.uid()
-      and profiles.role::text = 'admin'
-    )
-  );
+create policy "Admins can create teams" 
+on teams for insert 
+with check (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role::text = 'admin'
+  )
+);
 
-create policy "Admins can update teams"
-  on teams for update
-  using (
-    exists (
-      select 1 from profiles
-      where profiles.id = auth.uid()
-      and profiles.role::text = 'admin'
-    )
-  );
+create policy "Admins can update teams" 
+on teams for update 
+using (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role::text = 'admin'
+  )
+);
 
-create policy "Admins can delete teams"
-  on teams for delete
-  using (
-    exists (
-      select 1 from profiles
-      where profiles.id = auth.uid()
-      and profiles.role::text = 'admin'
-    )
-  );
+create policy "Admins can delete teams" 
+on teams for delete 
+using (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role::text = 'admin'
+  )
+);
 
 -- Team member policies
-create policy "team_member_management"
-  on team_members for all
-  using (auth.jwt()->>'role' in ('admin', 'agent'));
+create policy "Agents and admins can manage team members" 
+on team_members as permissive for all 
+to public 
+using (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role = any(array['admin'::user_role, 'agent'::user_role])
+  )
+);
 
--- Routing rules policies
-create policy "Admins can manage routing rules"
-  on routing_rules for all
-  using ((auth.jwt() ->> 'role')::text = 'admin');
-
--- Team capacity policies
-create policy "Admins can manage team capacity"
-  on team_capacity for all
-  using ((auth.jwt() ->> 'role')::text = 'admin');
-
-create policy "Agents can view own capacity"
-  on team_capacity for select
-  using (agent_id = auth.uid());
+create policy "View team members" 
+on team_members as permissive for select 
+to public 
+using (
+  auth.uid() = user_id 
+  or exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role = any(array['admin'::user_role, 'agent'::user_role])
+  )
+);
 
 -- Ticket policies
-create policy "Customers can view own tickets"
-  on tickets for select
-  using (
-    auth.uid() = customer_id
-    or (
-      exists (
-        select 1 from profiles
-        where profiles.id = auth.uid()
-        and profiles.role in ('admin', 'agent')
-      )
-    )
-  );
+create policy "Customers can view own tickets" 
+on tickets for select 
+using (
+  auth.uid() = customer_id
+  or exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role in ('admin', 'agent')
+  )
+);
 
-create policy "Customers can create tickets"
-  on tickets for insert
-  with check (
-    auth.uid() = customer_id
-    and created_on_behalf = false
-  );
+create policy "Customers can create tickets" 
+on tickets for insert 
+with check (
+  auth.uid() = customer_id
+  and created_on_behalf = false
+);
 
-create policy "Agents can create tickets on behalf"
-  on tickets for insert
-  with check (
-    exists (
-      select 1 from profiles
-      where profiles.id = auth.uid()
-      and profiles.role in ('admin', 'agent')
-    )
-    and created_on_behalf = true
-    and auth.uid() = created_by
-  );
+create policy "Agents can create tickets on behalf" 
+on tickets for insert 
+with check (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role in ('admin', 'agent')
+  )
+  and created_on_behalf = true
+  and auth.uid() = created_by
+);
 
-create policy "Agents can update tickets"
-  on tickets for update
-  using (
-    exists (
-      select 1 from profiles
-      where profiles.id = auth.uid()
-      and profiles.role in ('admin', 'agent')
+create policy "Agents can update tickets" 
+on tickets for update 
+using (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role in ('admin', 'agent')
+  )
+  and (
+    auth.uid() = assigned_to
+    or team_id in (
+      select team_id from team_members
+      where user_id = auth.uid()
     )
+  )
+);
+
+-- Ticket comment policies
+create policy "Admins can manage all comments" 
+on ticket_comments as permissive for all 
+to public 
+using (
+  exists (
+    select 1 from profiles
+    where profiles.id = auth.uid()
+    and profiles.role = 'admin'::user_role
+  )
+);
+
+create policy "Users can create ticket comments" 
+on ticket_comments as permissive for insert 
+to public 
+with check (
+  exists (
+    select 1 from tickets
+    where tickets.id = ticket_comments.ticket_id
     and (
-      auth.uid() = assigned_to
-      or team_id in (
+      tickets.created_by = auth.uid()
+      or tickets.assigned_to = auth.uid()
+      or tickets.team_id in (
         select team_id from team_members
         where user_id = auth.uid()
       )
     )
-  );
-
--- Ticket comment policies
-create policy "Users can view ticket comments"
-  on ticket_comments for select
-  using (
-    exists (
-      select 1 from tickets
-      where tickets.id = ticket_comments.ticket_id
-      and (
-        tickets.created_by = auth.uid() or
-        tickets.assigned_to = auth.uid() or
-        tickets.team_id in (
-          select team_id from team_members
-          where user_id = auth.uid()
-        )
-      )
-    ) and (
-      (is_internal = false) or
-      (
-        is_internal = true and
-        exists (
-          select 1 from profiles
-          where id = auth.uid()
-          and role in ('admin', 'agent')
-        )
+  )
+  and (
+    is_internal = false
+    or (
+      is_internal = true
+      and exists (
+        select 1 from profiles
+        where profiles.id = auth.uid()
+        and profiles.role in ('admin'::user_role, 'agent'::user_role)
       )
     )
-  );
+  )
+);
 
-create policy "Users can create ticket comments"
-  on ticket_comments for insert
-  with check (
-    exists (
-      select 1 from tickets
-      where tickets.id = ticket_id
-      and (
-        tickets.created_by = auth.uid() or
-        tickets.assigned_to = auth.uid() or
-        tickets.team_id in (
-          select team_id from team_members
-          where user_id = auth.uid()
-        )
-      )
-    ) and (
-      (is_internal = false) or
-      (
-        is_internal = true and
-        exists (
-          select 1 from profiles
-          where id = auth.uid()
-          and role in ('admin', 'agent')
-        )
+create policy "Users can view ticket comments" 
+on ticket_comments as permissive for select 
+to public 
+using (
+  exists (
+    select 1 from tickets
+    where tickets.id = ticket_comments.ticket_id
+    and (
+      tickets.created_by = auth.uid()
+      or tickets.assigned_to = auth.uid()
+      or tickets.team_id in (
+        select team_id from team_members
+        where user_id = auth.uid()
       )
     )
-  );
+  )
+  and (
+    is_internal = false
+    or (
+      is_internal = true
+      and exists (
+        select 1 from profiles
+        where profiles.id = auth.uid()
+        and profiles.role in ('admin'::user_role, 'agent'::user_role)
+      )
+    )
+  )
+);
 
-create policy "Users can update own comments"
-  on ticket_comments for update
-  using (user_id = auth.uid());
+create policy "Users can update own ticket comments" 
+on ticket_comments as permissive for update 
+to public 
+using (auth.uid() = user_id);
 
-create policy "Users can delete own comments"
-  on ticket_comments for delete
-  using (user_id = auth.uid());
+create policy "Users can delete own comments" 
+on ticket_comments for delete 
+using (auth.uid() = user_id);
 
--- Create indexes for performance
-create index if not exists idx_ticket_comments_ticket_id on ticket_comments(ticket_id);
-create index if not exists idx_ticket_comments_user_id on ticket_comments(user_id);
-create index if not exists idx_ticket_comments_created_at on ticket_comments(created_at desc);
+-- Create functions and triggers
+create or replace function set_updated_at()
+returns trigger as $$
+begin
+  new.updated_at = now();
+  return new;
+end;
+$$ language plpgsql;
 
--- Enable realtime
-begin;
-  -- Drop if exists to avoid errors on re-run
-  drop publication if exists supabase_realtime;
+-- Create updated_at triggers
+create trigger set_updated_at
+  before update on profiles
+  for each row
+  execute procedure set_updated_at();
 
-  -- Create publication for real-time
-  create publication supabase_realtime;
+create trigger set_updated_at
+  before update on teams
+  for each row
+  execute procedure set_updated_at();
 
-  -- Add tables to publication with all operations
-  alter publication supabase_realtime add table tickets;
-  alter publication supabase_realtime add table ticket_comments;
-  alter publication supabase_realtime add table profiles;
+create trigger set_updated_at
+  before update on team_members
+  for each row
+  execute procedure set_updated_at();
 
-  -- Enable replication for tables
-  alter table tickets replica identity full;
-  alter table ticket_comments replica identity full;
-  alter table profiles replica identity full;
-commit;
+create trigger set_updated_at
+  before update on tickets
+  for each row
+  execute procedure set_updated_at();
 
--- Grant permissions
-grant usage on schema public to postgres, anon, authenticated, service_role;
-grant all on all tables in schema public to postgres, anon, authenticated, service_role;
-grant all on all sequences in schema public to postgres, anon, authenticated, service_role;
-grant all on all routines in schema public to postgres, anon, authenticated, service_role; 
+create trigger set_updated_at
+  before update on ticket_comments
+  for each row
+  execute procedure set_updated_at();
+
+-- Create publication for realtime
+drop publication if exists supabase_realtime;
+create publication supabase_realtime;
+
+-- Enable realtime for all tables
+alter publication supabase_realtime add table profiles;
+alter publication supabase_realtime add table teams;
+alter publication supabase_realtime add table team_members;
+alter publication supabase_realtime add table tickets;
+alter publication supabase_realtime add table ticket_comments; 
