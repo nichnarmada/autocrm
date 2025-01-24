@@ -5,6 +5,7 @@ import { Tabs, TabsContent, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import { Input } from "@/components/ui/input"
 import { Suspense, useState, useEffect } from "react"
 import type { Database } from "@/types/supabase"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type Tables = Database["public"]["Tables"]
 type Ticket = Tables["tickets"]["Row"] & {
@@ -20,6 +21,36 @@ interface TicketsListViewProps {
   agents: Tables["profiles"]["Row"][]
   userId: string
   searchParams: { tab?: string; search?: string }
+}
+
+function TicketListSkeleton() {
+  return (
+    <div className="space-y-4">
+      <div className="rounded-lg border">
+        <div className="border-b">
+          <div className="grid grid-cols-5 p-4">
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        </div>
+        {[...Array(5)].map((_, i) => (
+          <div key={i} className="grid grid-cols-5 border-b p-4 last:border-0">
+            <Skeleton className="h-4 w-48" />
+            <Skeleton className="h-4 w-64" />
+            <div className="flex gap-2">
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-6 w-20" />
+            </div>
+            <Skeleton className="h-4 w-32" />
+            <Skeleton className="h-4 w-24" />
+          </div>
+        ))}
+      </div>
+    </div>
+  )
 }
 
 export function TicketsListView({
@@ -86,7 +117,7 @@ export function TicketsListView({
           </div>
 
           <TabsContent value="all" className="mt-4">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<TicketListSkeleton />}>
               <TicketList
                 tickets={filteredTickets}
                 teams={teams}
@@ -95,7 +126,7 @@ export function TicketsListView({
             </Suspense>
           </TabsContent>
           <TabsContent value="assigned" className="mt-4">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<TicketListSkeleton />}>
               <TicketList
                 tickets={filteredTickets}
                 teams={teams}
@@ -104,7 +135,7 @@ export function TicketsListView({
             </Suspense>
           </TabsContent>
           <TabsContent value="unassigned" className="mt-4">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<TicketListSkeleton />}>
               <TicketList
                 tickets={filteredTickets}
                 teams={teams}
@@ -113,7 +144,7 @@ export function TicketsListView({
             </Suspense>
           </TabsContent>
           <TabsContent value="closed" className="mt-4">
-            <Suspense fallback={<div>Loading...</div>}>
+            <Suspense fallback={<TicketListSkeleton />}>
               <TicketList
                 tickets={filteredTickets}
                 teams={teams}

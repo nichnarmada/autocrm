@@ -24,6 +24,7 @@ import {
 } from "@/components/ui/table"
 import { Button } from "@/components/ui/button"
 import { InviteUserDialog } from "@/components/users/invite-user-dialog"
+import { Skeleton } from "@/components/ui/skeleton"
 
 type Tables = Database["public"]["Tables"]
 type Profile = Tables["profiles"]["Row"]
@@ -103,7 +104,51 @@ export default function UsersPage() {
   }, [])
 
   if (isLoading) {
-    return <div>Loading...</div>
+    return (
+      <div className="container">
+        <div className="mb-6 flex items-center justify-between">
+          <Skeleton className="h-8 w-48" />
+          <Skeleton className="h-10 w-32" />
+        </div>
+
+        <div className="mb-6 flex justify-between">
+          <Skeleton className="h-10 w-[180px]" />
+          <Skeleton className="h-10 w-[300px]" />
+        </div>
+
+        <div className="rounded-lg border">
+          <div className="border-b">
+            <div className="grid grid-cols-4 p-4">
+              <Skeleton className="h-4 w-20" />
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-16" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          </div>
+          {[...Array(5)].map((_, i) => (
+            <div
+              key={i}
+              className="grid grid-cols-4 border-b p-4 last:border-0"
+            >
+              <Skeleton className="h-4 w-32" />
+              <Skeleton className="h-4 w-48" />
+              <Skeleton className="h-6 w-20" />
+              <Skeleton className="h-4 w-24" />
+            </div>
+          ))}
+        </div>
+
+        <div className="mt-6 flex items-center justify-center gap-2">
+          <Skeleton className="h-9 w-20" />
+          <div className="flex items-center gap-1">
+            {[...Array(3)].map((_, i) => (
+              <Skeleton key={i} className="h-9 w-9" />
+            ))}
+          </div>
+          <Skeleton className="h-9 w-20" />
+        </div>
+      </div>
+    )
   }
 
   if (!isAdmin) {
