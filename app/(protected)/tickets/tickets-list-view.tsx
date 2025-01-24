@@ -1,7 +1,6 @@
 "use client"
 
 import { useState } from "react"
-import { useRouter } from "next/navigation"
 import {
   ColumnFiltersState,
   SortingState,
@@ -25,6 +24,7 @@ import {
   TableHeader,
   TableRow,
 } from "@/components/ui/table"
+import { useRouter } from "next/navigation"
 
 import { columns } from "./columns"
 import { DataTablePagination } from "./data-table-pagination"
@@ -53,7 +53,6 @@ export function TicketsListView({
 }: TicketsListViewProps) {
   const router = useRouter()
   const [viewMode, setViewMode] = useState<ViewMode>("list")
-  // const [rowSelection, setRowSelection] = useState({})
   const [columnVisibility, setColumnVisibility] = useState<VisibilityState>({})
   const [columnFilters, setColumnFilters] = useState<ColumnFiltersState>([])
   const [sorting, setSorting] = useState<SortingState>([])
@@ -64,11 +63,8 @@ export function TicketsListView({
     state: {
       sorting,
       columnVisibility,
-      // rowSelection,
       columnFilters,
     },
-    // enableRowSelection: true,
-    // onRowSelectionChange: setRowSelection,
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,
     onColumnVisibilityChange: setColumnVisibility,
@@ -131,18 +127,8 @@ export function TicketsListView({
                   table.getRowModel().rows.map((row) => (
                     <TableRow
                       key={row.id}
-                      className="cursor-pointer hover:bg-muted/50"
-                      onClick={(e) => {
-                        // Prevent navigation if clicking on action buttons
-                        if (
-                          (e.target as HTMLElement).closest(
-                            '[data-prevent-row-click="true"]'
-                          )
-                        ) {
-                          return
-                        }
-                        router.push(`/tickets/${row.original.id}`)
-                      }}
+                      onClick={() => router.push(`/tickets/${row.original.id}`)}
+                      className="cursor-pointer"
                     >
                       {row.getVisibleCells().map((cell) => (
                         <TableCell key={cell.id}>

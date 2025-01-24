@@ -127,6 +127,58 @@ export async function DELETE(request: NextRequest) {
     const supabase = await createClient()
     const ticketId = request.nextUrl.pathname.split("/")[3]
 
+    // Check authentication and role
+    const {
+      data: { user },
+    } = await supabase.auth.getUser()
+    if (!user) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "UNAUTHORIZED",
+            message: "User not authenticated",
+          },
+        },
+        { status: 401 }
+      )
+    }
+
+    // Get user's role
+    const { data: profile } = await supabase
+      .from("profiles")
+      .select("role")
+      .eq("id", user.id)
+      .single()
+
+    if (!profile) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "PROFILE_NOT_FOUND",
+            message: "User profile not found",
+          },
+        },
+        { status: 404 }
+      )
+    }
+
+    const isAgentOrAdmin = profile.role === "agent" || profile.role === "admin"
+    if (!isAgentOrAdmin) {
+      return NextResponse.json(
+        {
+          success: false,
+          error: {
+            code: "FORBIDDEN",
+            message: "Only agents and admins can delete tickets",
+          },
+        },
+        { status: 403 }
+      )
+    }
+
+    // Delete the ticket
     const { error } = await supabase.from("tickets").delete().eq("id", ticketId)
 
     if (error) throw error

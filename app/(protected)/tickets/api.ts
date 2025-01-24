@@ -36,3 +36,19 @@ export async function createTicket(data: CreateTicketData): Promise<void> {
 
   if (error) throw error
 }
+
+export async function deleteTicket(id: string): Promise<void> {
+  console.log("[API] Deleting ticket:", id)
+
+  const response = await fetch(`/api/tickets/${id}`, {
+    method: "DELETE",
+  })
+
+  if (!response.ok) {
+    const error = await response.json()
+    console.error("[API] Error deleting ticket:", error)
+    throw new Error(error.error?.message || "Failed to delete ticket")
+  }
+
+  console.log("[API] Successfully deleted ticket:", id)
+}
