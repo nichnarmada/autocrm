@@ -5,7 +5,7 @@ create extension if not exists "pgcrypto";
 create extension if not exists "pgjwt";
 create extension if not exists "uuid-ossp";
 
--- Create types
+-- Create enums
 create type user_role as enum ('admin', 'agent', 'customer');
 create type ticket_status as enum ('new', 'open', 'in_progress', 'resolved', 'closed');
 create type ticket_priority as enum ('low', 'medium', 'high', 'urgent');
@@ -22,7 +22,7 @@ $$ language plpgsql;
 
 -- Create handle_new_user function with proper role casting
 create or replace function handle_new_user()
-returns trigger 
+returns trigger
 security definer
 set search_path = public
 language plpgsql
@@ -94,31 +94,31 @@ create trigger on_auth_user_created
 
 -- Create tables
 create table profiles (
-  id uuid references auth.users on delete cascade primary key,
+  id uuid primary key references auth.users on delete cascade,
   full_name text,
   avatar_url text,
   email text,
   role user_role not null default 'customer',
   is_profile_setup boolean not null default false,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table teams (
   id uuid primary key default uuid_generate_v4(),
   name text not null,
   description text,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table team_members (
   id uuid primary key default uuid_generate_v4(),
   team_id uuid references teams on delete cascade not null,
-  user_id uuid references auth.users on delete cascade not null,
+  user_id uuid references profiles(id) on delete cascade not null,
   role text not null default 'member',
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
   unique(team_id, user_id)
 );
 
@@ -128,20 +128,17 @@ create table routing_rules (
   category ticket_category,
   priority ticket_priority,
   conditions jsonb,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table team_capacity (
   id uuid primary key default uuid_generate_v4(),
   team_id uuid references teams on delete cascade not null,
-  agent_id uuid references profiles on delete cascade not null,
+  agent_id uuid references profiles(id) on delete cascade not null,
   max_tickets integer not null default 10,
-  current_tickets integer not null default 0,
-  is_available boolean not null default true,
-  last_assigned timestamp with time zone,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now(),
+  created_at timestamptz default now(),
+  updated_at timestamptz default now(),
   unique(team_id, agent_id)
 );
 
@@ -151,14 +148,15 @@ create table tickets (
   description text,
   status ticket_status not null default 'new',
   priority ticket_priority not null default 'medium',
-  category ticket_category not null default 'other',
-  created_by uuid references auth.users on delete set null,
-  assigned_to uuid references auth.users on delete set null,
+  category ticket_category not null default 'bug',
+  created_by uuid references profiles(id) on delete set null,
+  assigned_to uuid references profiles(id) on delete set null,
   team_id uuid references teams on delete set null,
   customer_id uuid references profiles(id) on delete set null,
   created_on_behalf boolean default false,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
+  metadata jsonb,
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 create table ticket_comments (
@@ -168,8 +166,8 @@ create table ticket_comments (
   content text not null,
   is_internal boolean default false,
   attachments jsonb default '[]'::jsonb,
-  created_at timestamp with time zone default now(),
-  updated_at timestamp with time zone default now()
+  created_at timestamptz default now(),
+  updated_at timestamptz default now()
 );
 
 -- Create triggers for updated_at
@@ -230,7 +228,6 @@ begin
   select agent_id into v_agent_id
   from team_capacity
   where team_id = p_team_id
-    and is_available = true
     and current_tickets < max_tickets
   order by current_tickets asc
   limit 1;
@@ -267,8 +264,7 @@ begin
       
       -- Update agent capacity
       update team_capacity
-      set current_tickets = current_tickets + 1,
-          last_assigned = now()
+      set current_tickets = current_tickets + 1
       where team_id = v_team_id and agent_id = v_agent_id;
     end if;
   end if;
@@ -313,7 +309,37 @@ create policy "View teams"
     exists (
       select 1 from profiles
       where profiles.id = auth.uid()
-      and profiles.role in ('admin', 'agent')
+      and profiles.role::text in ('admin', 'agent')
+    )
+  );
+
+create policy "Admins can create teams"
+  on teams for insert
+  with check (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role::text = 'admin'
+    )
+  );
+
+create policy "Admins can update teams"
+  on teams for update
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role::text = 'admin'
+    )
+  );
+
+create policy "Admins can delete teams"
+  on teams for delete
+  using (
+    exists (
+      select 1 from profiles
+      where profiles.id = auth.uid()
+      and profiles.role::text = 'admin'
     )
   );
 
@@ -465,10 +491,12 @@ begin;
   -- Add tables to publication with all operations
   alter publication supabase_realtime add table tickets;
   alter publication supabase_realtime add table ticket_comments;
+  alter publication supabase_realtime add table profiles;
 
-  -- Enable replication for tickets
+  -- Enable replication for tables
   alter table tickets replica identity full;
   alter table ticket_comments replica identity full;
+  alter table profiles replica identity full;
 commit;
 
 -- Grant permissions

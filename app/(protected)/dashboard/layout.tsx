@@ -21,15 +21,17 @@ export default async function DashboardLayout({
     redirect("/sign-in")
   }
 
-  // Get user's role
+  // Get user profile with role
   const { data: profile } = await supabase
     .from("profiles")
     .select("role")
     .eq("id", user.id)
     .single()
 
+  const role = profile?.role || "customer"
+
   // Return the appropriate view based on role
-  switch (profile?.role) {
+  switch (role) {
     case "admin":
       return admin
     case "agent":
