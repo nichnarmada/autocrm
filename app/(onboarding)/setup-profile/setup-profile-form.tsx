@@ -13,7 +13,7 @@ import {
   CardHeader,
   CardTitle,
 } from "@/components/ui/card"
-import { useState, useEffect } from "react"
+import { useState } from "react"
 
 type FormState = {
   error?: string
@@ -31,14 +31,6 @@ export function SetupProfileForm() {
   const isInvitedUser = searchParams.get("invite") === "true"
   const [formState, setFormState] = useState<FormState>({})
   const [isSubmitting, setIsSubmitting] = useState(false)
-
-  // Debug log
-  useEffect(() => {
-    console.log("Setup Profile Form State:", {
-      isInvitedUser,
-      searchParams: Object.fromEntries(searchParams.entries()),
-    })
-  }, [searchParams, isInvitedUser])
 
   async function onSubmit(formData: FormData) {
     try {

@@ -86,7 +86,7 @@ export function EditTeamDialog({
         <DialogHeader>
           <DialogTitle>Edit Team</DialogTitle>
           <DialogDescription>
-            Make changes to the team. Click save when you're done.
+            Make changes to the team. Click save when you&apos;re done.
           </DialogDescription>
         </DialogHeader>
         <Form {...form}>
