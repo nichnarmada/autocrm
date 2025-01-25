@@ -1,8 +1,4 @@
-"use client"
-
 import { useState } from "react"
-import { createClient } from "@/utils/supabase/client"
-import { useToast } from "@/hooks/use-toast"
 import { Button } from "@/components/ui/button"
 import {
   Dialog,
@@ -16,11 +12,16 @@ import {
 import { Input } from "@/components/ui/input"
 import { Label } from "@/components/ui/label"
 import { UserPlus } from "lucide-react"
-import { useRouter } from "next/navigation"
 
-export function InviteUserDialog() {
-  const router = useRouter()
-  const { toast } = useToast()
+interface InviteUserDialogProps {
+  onInvite: (email: string) => Promise<void>
+  onSuccess?: () => void
+}
+
+export function InviteUserDialog({
+  onInvite,
+  onSuccess,
+}: InviteUserDialogProps) {
   const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
@@ -30,27 +31,10 @@ export function InviteUserDialog() {
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase.functions.invoke("invite-user", {
-        body: { email, role: "agent" },
-      })
-
-      if (error) {
-        toast({
-          title: "Error",
-          description: "Failed to invite user. Please try again.",
-          variant: "destructive",
-        })
-        throw error
-      }
-
-      toast({
-        title: "Success",
-        description: "User invited successfully.",
-      })
+      await onInvite(email)
       setOpen(false)
       setEmail("")
-      router.refresh()
+      onSuccess?.()
     } catch (error) {
       console.error("Error inviting user:", error)
     } finally {
