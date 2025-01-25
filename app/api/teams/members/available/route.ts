@@ -14,26 +14,26 @@ export async function GET(request: Request) {
       )
     }
 
-    // Get current team members
-    const { data: currentMembers } = await supabase
+    // Get ALL team members across all teams
+    const { data: allTeamMembers } = await supabase
       .from("team_members")
       .select("user_id")
-      .eq("team_id", teamId)
 
-    const existingUserIds =
-      currentMembers?.map((member) => member.user_id) || []
+    const allMemberIds = allTeamMembers?.map((member) => member.user_id) || []
 
-    // Get all agents except current team members
-    const { data: users, error } = await supabase
+    // Get all agents who are not members of any team
+    const query = supabase
       .from("profiles")
       .select()
       .eq("role", "agent") // Only get agents
-      .not(
-        "id",
-        "in",
-        existingUserIds.length > 0 ? `(${existingUserIds.join(",")})` : "(null)"
-      )
       .order("full_name")
+
+    // Only add the not-in condition if there are existing members
+    if (allMemberIds.length > 0) {
+      query.not("id", "in", `(${allMemberIds.join(",")})`)
+    }
+
+    const { data: users, error } = await query
 
     if (error) {
       console.error("[GET /api/teams/members/available] Error:", error)

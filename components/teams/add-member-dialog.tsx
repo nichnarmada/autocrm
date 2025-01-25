@@ -13,7 +13,7 @@ import {
 } from "@/components/ui/dialog"
 import { ScrollArea } from "@/components/ui/scroll-area"
 import { Avatar, AvatarFallback, AvatarImage } from "@/components/ui/avatar"
-import { Loader2, Plus, Trash2 } from "lucide-react"
+import { Loader2, Minus, Plus } from "lucide-react"
 import { useToast } from "@/hooks/use-toast"
 import { cn } from "@/lib/utils"
 import type { Team, TeamMember } from "@/types/teams"
@@ -285,7 +285,7 @@ export function AddMemberDialog({
                         onClick={() => handleRemoveMember(member)}
                         disabled={isUpdating}
                       >
-                        <Trash2 className="h-4 w-4" />
+                        <Minus className="h-4 w-4" />
                       </Button>
                     </div>
                   ))}

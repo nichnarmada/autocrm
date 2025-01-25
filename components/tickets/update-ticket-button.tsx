@@ -1,14 +1,11 @@
 "use client"
 
-import { useState } from "react"
 import {
   Dialog,
   DialogContent,
   DialogHeader,
   DialogTitle,
-  DialogTrigger,
 } from "@/components/ui/dialog"
-import { Button } from "@/components/ui/button"
 import {
   Select,
   SelectContent,
@@ -18,11 +15,22 @@ import {
 } from "@/components/ui/select"
 import { createClient } from "@/utils/supabase/client"
 import { useRouter } from "next/navigation"
+import { useToast } from "@/hooks/use-toast"
 import { Ticket } from "@/types/tickets"
 
-export function UpdateTicketButton({ ticket }: { ticket: Ticket }) {
-  const [open, setOpen] = useState(false)
+interface UpdateTicketDialogProps {
+  ticket: Ticket
+  open: boolean
+  onOpenChange: (open: boolean) => void
+}
+
+export function UpdateTicketDialog({
+  ticket,
+  open,
+  onOpenChange,
+}: UpdateTicketDialogProps) {
   const router = useRouter()
+  const { toast } = useToast()
 
   async function updateStatus(status: string) {
     const supabase = createClient()
@@ -31,18 +39,43 @@ export function UpdateTicketButton({ ticket }: { ticket: Ticket }) {
       .update({ status })
       .match({ id: ticket.id })
 
-    if (!error) {
+    if (error) {
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description: "Failed to update ticket status",
+      })
+      return
+    }
+
+    toast({
+      title: "Success",
+      description: "Ticket status updated successfully",
+    })
+
+    // Close dialog first
+    onOpenChange(false)
+
+    // Then refresh after a small delay
+    setTimeout(() => {
       router.refresh()
-      setOpen(false)
+    }, 100)
+  }
+
+  const handleOpenChange = (open: boolean) => {
+    if (!open) {
+      // Add a small delay before closing to prevent row click
+      setTimeout(() => {
+        onOpenChange(false)
+      }, 100)
+    } else {
+      onOpenChange(true)
     }
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button variant="outline">Update Status</Button>
-      </DialogTrigger>
-      <DialogContent>
+    <Dialog open={open} onOpenChange={handleOpenChange}>
+      <DialogContent onClick={(e) => e.stopPropagation()}>
         <DialogHeader>
           <DialogTitle>Update Ticket Status</DialogTitle>
         </DialogHeader>

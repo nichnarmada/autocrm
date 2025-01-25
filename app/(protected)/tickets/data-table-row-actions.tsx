@@ -1,19 +1,12 @@
 "use client"
 
 import { Row } from "@tanstack/react-table"
-import { MoreHorizontal, Pencil, Trash } from "lucide-react"
+import { Maximize2, Pencil, Trash } from "lucide-react"
 import { useRouter } from "next/navigation"
 import { useState } from "react"
 import { useToast } from "@/hooks/use-toast"
 
 import { Button } from "@/components/ui/button"
-import {
-  DropdownMenu,
-  DropdownMenuContent,
-  DropdownMenuItem,
-  DropdownMenuSeparator,
-  DropdownMenuTrigger,
-} from "@/components/ui/dropdown-menu"
 import {
   AlertDialog,
   AlertDialogAction,
@@ -24,8 +17,14 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
+import { UpdateTicketDialog } from "@/components/tickets/update-ticket-button"
 import { deleteTicket } from "./api"
 import type { Ticket } from "@/types/tickets"
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipTrigger,
+} from "@/components/ui/tooltip"
 
 interface DataTableRowActionsProps {
   row: Row<Ticket>
@@ -36,11 +35,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
   const { toast } = useToast()
   const ticket = row.original
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
+  const [showEditDialog, setShowEditDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
 
-  const handleDelete = async (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleDelete = async () => {
     try {
       setIsDeleting(true)
       await deleteTicket(ticket.id)
@@ -63,45 +61,56 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
     }
   }
 
-  const handleEdit = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
+  const handleView = () => {
     router.push(`/tickets/${ticket.id}`)
   }
 
-  const handleDeleteClick = (e: React.MouseEvent) => {
-    e.preventDefault()
-    e.stopPropagation()
-    setShowDeleteDialog(true)
-  }
-
   return (
-    <>
-      <DropdownMenu>
-        <DropdownMenuTrigger asChild onClick={(e) => e.stopPropagation()}>
+    <div className="flex items-center gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
           <Button
             variant="ghost"
-            className="flex h-8 w-8 p-0 data-[state=open]:bg-muted"
+            size="icon"
+            onClick={handleView}
+            className="h-8 w-8"
           >
-            <MoreHorizontal className="h-4 w-4" />
-            <span className="sr-only">Open menu</span>
+            <Maximize2 className="h-4 w-4" />
+            <span className="sr-only">View ticket details</span>
           </Button>
-        </DropdownMenuTrigger>
-        <DropdownMenuContent align="end" className="w-[160px]">
-          <DropdownMenuItem onClick={handleEdit}>
-            <Pencil className="mr-2 h-3.5 w-3.5" />
-            Edit
-          </DropdownMenuItem>
-          <DropdownMenuSeparator />
-          <DropdownMenuItem
-            onClick={handleDeleteClick}
-            className="text-destructive focus:text-destructive"
+        </TooltipTrigger>
+        <TooltipContent>View details</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowEditDialog(true)}
+            className="h-8 w-8"
           >
-            <Trash className="mr-2 h-3.5 w-3.5" />
-            Delete
-          </DropdownMenuItem>
-        </DropdownMenuContent>
-      </DropdownMenu>
+            <Pencil className="h-4 w-4" />
+            <span className="sr-only">Edit ticket</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Edit ticket</TooltipContent>
+      </Tooltip>
+
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowDeleteDialog(true)}
+            className="h-8 w-8 text-destructive hover:text-destructive"
+          >
+            <Trash className="h-4 w-4" />
+            <span className="sr-only">Delete ticket</span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>Delete ticket</TooltipContent>
+      </Tooltip>
 
       <AlertDialog open={showDeleteDialog} onOpenChange={setShowDeleteDialog}>
         <AlertDialogContent>
@@ -124,6 +133,12 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
-    </>
+
+      <UpdateTicketDialog
+        ticket={ticket}
+        open={showEditDialog}
+        onOpenChange={setShowEditDialog}
+      />
+    </div>
   )
 }
