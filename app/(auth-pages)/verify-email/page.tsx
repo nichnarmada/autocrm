@@ -1,6 +1,6 @@
 export default function VerifyEmailPage() {
   return (
-    <div className="w-full max-w-xl space-y-8">
+    <div className="mx-auto my-auto w-full max-w-xl space-y-8">
       <div className="text-center">
         <h1 className="text-3xl font-bold tracking-tight">AutoCRM</h1>
         <p className="mt-3 text-muted-foreground">Check your email</p>

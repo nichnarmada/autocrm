@@ -4,7 +4,7 @@ import { Suspense } from "react"
 
 export default function Login() {
   return (
-    <Card className="mx-auto w-full max-w-lg">
+    <Card className="mx-auto my-auto w-full max-w-lg">
       <CardHeader>
         <CardTitle className="text-center">Sign in to your account</CardTitle>
       </CardHeader>
