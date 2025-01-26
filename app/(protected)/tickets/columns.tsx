@@ -6,7 +6,16 @@ import { DataTableColumnHeader } from "./data-table-column-header"
 import { DataTableRowActions } from "./data-table-row-actions"
 import { formatDistanceToNow } from "date-fns"
 import type { Ticket } from "@/types/tickets"
+import type { Team } from "@/types/teams"
+import type { Profile } from "@/types/users"
 // import { Checkbox } from "@/components/ui/checkbox"
+
+declare module "@tanstack/table-core" {
+  interface TableMeta<TData> {
+    teams: Team[]
+    agents: Profile[]
+  }
+}
 
 export const columns: ColumnDef<Ticket>[] = [
   // {
@@ -46,6 +55,19 @@ export const columns: ColumnDef<Ticket>[] = [
           {status}
         </Badge>
       )
+    },
+    filterFn: (row, id, value) => {
+      return value.includes(row.getValue(id))
+    },
+  },
+  {
+    accessorKey: "category",
+    header: ({ column }) => (
+      <DataTableColumnHeader column={column} title="Category" />
+    ),
+    cell: ({ row }) => {
+      const category = row.getValue("category") as string
+      return <Badge variant="outline">{category.replace("_", " ")}</Badge>
     },
     filterFn: (row, id, value) => {
       return value.includes(row.getValue(id))
@@ -92,6 +114,12 @@ export const columns: ColumnDef<Ticket>[] = [
   },
   {
     id: "actions",
-    cell: ({ row }) => <DataTableRowActions row={row} />,
+    cell: ({ row, table }) => (
+      <DataTableRowActions
+        row={row}
+        teams={table.options.meta?.teams || []}
+        agents={table.options.meta?.agents || []}
+      />
+    ),
   },
 ]

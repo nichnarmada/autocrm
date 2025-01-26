@@ -1,9 +1,44 @@
-import { AlertCircle, Bug, FileText, Gauge } from "lucide-react"
+import {
+  AlertCircle,
+  Bug,
+  FileText,
+  Gauge,
+  InboxIcon,
+  CheckCircleIcon,
+  HourglassIcon,
+} from "lucide-react"
 import type { Database } from "@/types/supabase"
 
 type TicketStatus = Database["public"]["Enums"]["ticket_status"]
 type TicketPriority = Database["public"]["Enums"]["ticket_priority"]
 type TicketCategory = Database["public"]["Enums"]["ticket_category"]
+
+export const ticketViews = [
+  {
+    id: "all",
+    label: "All Tickets",
+    icon: InboxIcon,
+    filter: () => true, // Show all tickets
+  },
+  {
+    id: "unassigned",
+    label: "Unassigned",
+    icon: InboxIcon,
+    filter: (ticket: any) => !ticket.assigned_to,
+  },
+  {
+    id: "ongoing",
+    label: "Ongoing",
+    icon: HourglassIcon,
+    filter: (ticket: any) => ["open", "in_progress"].includes(ticket.status),
+  },
+  {
+    id: "completed",
+    label: "Completed",
+    icon: CheckCircleIcon,
+    filter: (ticket: any) => ["resolved", "closed"].includes(ticket.status),
+  },
+]
 
 export const statuses: { value: TicketStatus; label: string }[] = [
   {

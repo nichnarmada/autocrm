@@ -17,9 +17,11 @@ import {
   AlertDialogHeader,
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
-import { UpdateTicketDialog } from "@/components/tickets/update-ticket-button"
+import { EditTicketDialog } from "@/components/tickets/edit-ticket-dialog"
 import { deleteTicket } from "./api"
 import type { Ticket } from "@/types/tickets"
+import type { Team } from "@/types/teams"
+import type { Profile } from "@/types/users"
 import {
   Tooltip,
   TooltipContent,
@@ -28,9 +30,15 @@ import {
 
 interface DataTableRowActionsProps {
   row: Row<Ticket>
+  teams: Team[]
+  agents: Profile[]
 }
 
-export function DataTableRowActions({ row }: DataTableRowActionsProps) {
+export function DataTableRowActions({
+  row,
+  teams,
+  agents,
+}: DataTableRowActionsProps) {
   const router = useRouter()
   const { toast } = useToast()
   const ticket = row.original
@@ -134,8 +142,10 @@ export function DataTableRowActions({ row }: DataTableRowActionsProps) {
         </AlertDialogContent>
       </AlertDialog>
 
-      <UpdateTicketDialog
+      <EditTicketDialog
         ticket={ticket}
+        teams={teams}
+        agents={agents}
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
       />
