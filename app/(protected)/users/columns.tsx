@@ -80,20 +80,6 @@ export const columns: ColumnDef<User>[] = [
     },
   },
   {
-    accessorKey: "is_online",
-    header: ({ column }) => (
-      <DataTableColumnHeader column={column} title="Status" />
-    ),
-    cell: ({ row }) => {
-      const isOnline = row.getValue("is_online") as boolean
-      return (
-        <Badge variant={isOnline ? "default" : "secondary"}>
-          {isOnline ? "Online" : "Offline"}
-        </Badge>
-      )
-    },
-  },
-  {
     accessorKey: "created_at",
     header: ({ column }) => (
       <DataTableColumnHeader column={column} title="Joined" />

@@ -14,15 +14,18 @@ import { Label } from "@/components/ui/label"
 import { UserPlus } from "lucide-react"
 
 interface InviteUserDialogProps {
-  onInvite: (email: string) => Promise<void>
+  open?: boolean
+  onOpenChange?: (open: boolean) => void
+  onInvite?: (email: string) => Promise<void>
   onSuccess?: () => void
 }
 
 export function InviteUserDialog({
+  open,
+  onOpenChange,
   onInvite,
   onSuccess,
 }: InviteUserDialogProps) {
-  const [open, setOpen] = useState(false)
   const [email, setEmail] = useState("")
   const [isLoading, setIsLoading] = useState(false)
 
@@ -31,10 +34,12 @@ export function InviteUserDialog({
     setIsLoading(true)
 
     try {
-      await onInvite(email)
-      setOpen(false)
-      setEmail("")
-      onSuccess?.()
+      if (onInvite) {
+        await onInvite(email)
+        onOpenChange?.(false)
+        setEmail("")
+        onSuccess?.()
+      }
     } catch (error) {
       console.error("Error inviting user:", error)
     } finally {
@@ -43,13 +48,7 @@ export function InviteUserDialog({
   }
 
   return (
-    <Dialog open={open} onOpenChange={setOpen}>
-      <DialogTrigger asChild>
-        <Button>
-          <UserPlus className="mr-2 h-4 w-4" />
-          Invite Agent
-        </Button>
-      </DialogTrigger>
+    <Dialog open={open} onOpenChange={onOpenChange}>
       <DialogContent className="sm:max-w-[425px]">
         <form onSubmit={handleSubmit}>
           <DialogHeader>

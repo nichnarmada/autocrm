@@ -1,8 +1,8 @@
 import { createClient } from "@/utils/supabase/server"
 import { redirect } from "next/navigation"
-import { UsersContent } from "./users-content"
 import { UsersListSkeleton } from "./users-list-skeleton"
 import { Suspense } from "react"
+import { UsersListView } from "./users-list-view"
 
 export default async function UsersPage() {
   const supabase = await createClient()
@@ -44,7 +44,7 @@ export default async function UsersPage() {
       </div>
 
       <Suspense fallback={<UsersListSkeleton />}>
-        <UsersContent initialUsers={users || []} />
+        <UsersListView users={users || []} />
       </Suspense>
     </div>
   )
