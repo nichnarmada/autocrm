@@ -50,8 +50,8 @@ export function EditTicketDialog({
     status: ticket.status,
     priority: ticket.priority,
     category: ticket.category,
-    assigned_to: ticket.assigned_to || "none",
-    team_id: ticket.team_id || "none",
+    assigned_to: ticket.assigned_to?.id || "none",
+    team_id: ticket.team_id?.id || "none",
   })
 
   async function handleSubmit(e: React.FormEvent) {
@@ -59,18 +59,25 @@ export function EditTicketDialog({
     setIsLoading(true)
 
     try {
-      const supabase = createClient()
-      const { error } = await supabase
-        .from("tickets")
-        .update({
-          ...formData,
-          assigned_to:
-            formData.assigned_to === "none" ? null : formData.assigned_to,
-          team_id: formData.team_id === "none" ? null : formData.team_id,
-        })
-        .eq("id", ticket.id)
+      const updateData = {
+        ...formData,
+        assigned_to:
+          formData.assigned_to === "none" ? null : formData.assigned_to,
+        team_id: formData.team_id === "none" ? null : formData.team_id,
+      }
 
-      if (error) throw error
+      const response = await fetch(`/api/tickets/${ticket.id}`, {
+        method: "PATCH",
+        headers: {
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify(updateData),
+      })
+      const json = await response.json()
+
+      if (!json.success) {
+        throw new Error(json.error)
+      }
 
       toast({
         title: "Success",

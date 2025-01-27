@@ -69,10 +69,23 @@ export async function PATCH(request: NextRequest) {
     const ticketId = request.nextUrl.pathname.split("/")[3]
     const update: TicketUpdate = await request.json()
 
-    const { data: ticket, error } = await supabase
+    // First, update the ticket
+    const { error: updateError } = await supabase
       .from("tickets")
       .update(update)
       .eq("id", ticketId)
+
+    if (updateError) {
+      console.error("[API] Error updating ticket:", updateError)
+      return NextResponse.json(
+        { success: false, error: updateError.message },
+        { status: 500 }
+      )
+    }
+
+    // Then, fetch the updated ticket with all its relations
+    const { data: ticket, error: fetchError } = await supabase
+      .from("tickets")
       .select(
         `
         *,
@@ -101,12 +114,13 @@ export async function PATCH(request: NextRequest) {
         )
       `
       )
+      .eq("id", ticketId)
       .single()
 
-    if (error) {
-      console.error("[API] Error updating ticket:", error)
+    if (fetchError) {
+      console.error("[API] Error fetching updated ticket:", fetchError)
       return NextResponse.json(
-        { success: false, error: error.message },
+        { success: false, error: fetchError.message },
         { status: 500 }
       )
     }
