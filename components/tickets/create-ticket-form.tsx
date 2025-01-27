@@ -26,6 +26,7 @@ import { useState } from "react"
 import { ticketSchema } from "@/app/(protected)/tickets/schema"
 import type { z } from "zod"
 import { Team } from "@/types/teams"
+import { FileUpload } from "@/components/file-upload"
 
 interface CreateTicketFormProps {
   teams?: Team[]
@@ -40,6 +41,7 @@ export function CreateTicketForm({
 }: CreateTicketFormProps) {
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
 
   const form = useForm<z.infer<typeof ticketSchema>>({
     resolver: zodResolver(ticketSchema),
@@ -50,14 +52,21 @@ export function CreateTicketForm({
       category: "bug",
       status: "new",
       team_id: undefined,
+      attachments: [],
     },
   })
 
   async function handleSubmit(values: z.infer<typeof ticketSchema>) {
     setIsSubmitting(true)
     try {
-      await onSubmit(values)
+      // Add selected files to form data
+      const formData = {
+        ...values,
+        attachments: selectedFiles.map((file) => ({ file })),
+      }
+      await onSubmit(formData)
       form.reset()
+      setSelectedFiles([])
       router.refresh()
       onSuccess?.()
     } catch (error) {
@@ -100,6 +109,35 @@ export function CreateTicketForm({
                   placeholder="Detailed description of the issue"
                   className="min-h-[100px]"
                   {...field}
+                />
+              </FormControl>
+              <FormMessage />
+            </FormItem>
+          )}
+        />
+
+        <FormField
+          control={form.control}
+          name="attachments"
+          render={() => (
+            <FormItem>
+              <FormLabel>Attachments (Optional)</FormLabel>
+              <FormControl>
+                <FileUpload
+                  value={selectedFiles}
+                  onChange={setSelectedFiles}
+                  maxSize={10 * 1024 * 1024} // 10MB
+                  accept={[
+                    "image/*",
+                    ".pdf",
+                    ".txt",
+                    ".csv",
+                    ".doc",
+                    ".docx",
+                    ".xls",
+                    ".xlsx",
+                  ]}
+                  maxFiles={10}
                 />
               </FormControl>
               <FormMessage />

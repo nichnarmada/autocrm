@@ -38,7 +38,21 @@ async function TicketContent({ id }: { id: string }) {
       assigned_to:profiles!tickets_assigned_to_fkey(id, full_name, email, avatar_url),
       created_by:profiles!tickets_created_by_fkey(id, full_name, email, avatar_url),
       customer_id:profiles!tickets_customer_id_fkey(id, full_name, email, avatar_url),
-      team_id:teams(id, name, description)
+      team_id:teams(id, name, description),
+      ticket_attachments(
+        id,
+        file_name,
+        file_type,
+        file_size,
+        storage_path,
+        created_at,
+        uploaded_by:profiles!ticket_attachments_uploaded_by_fkey(
+          id,
+          full_name,
+          email,
+          avatar_url
+        )
+      )
     `
     )
     .eq("id", id)

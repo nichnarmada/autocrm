@@ -24,6 +24,9 @@ import { useState } from "react"
 import type { Ticket } from "@/types/tickets"
 import type { Team } from "@/types/teams"
 import type { Profile } from "@/types/users"
+import { Badge } from "@/components/ui/badge"
+import { FileIcon, X } from "lucide-react"
+import { createClient } from "@/utils/supabase/client"
 
 interface EditTicketDialogProps {
   ticket: Ticket
@@ -43,6 +46,9 @@ export function EditTicketDialog({
   const router = useRouter()
   const { toast } = useToast()
   const [isLoading, setIsLoading] = useState(false)
+  const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const supabase = createClient()
+
   const [formData, setFormData] = useState({
     title: ticket.title,
     description: ticket.description || "",
@@ -78,6 +84,39 @@ export function EditTicketDialog({
         throw new Error(json.error)
       }
 
+      // Handle file uploads if there are any
+      if (selectedFiles.length > 0) {
+        const uploadPromises = selectedFiles.map(async (file) => {
+          const fileExt = file.name.split(".").pop()
+          const filePath = `${ticket.id}/${crypto.randomUUID()}.${fileExt}`
+
+          const { error: uploadError } = await supabase.storage
+            .from("ticket-attachments")
+            .upload(filePath, file)
+
+          if (uploadError) throw uploadError
+
+          // Create record in ticket_attachments table
+          const { error: attachmentError } = await supabase
+            .from("ticket_attachments")
+            .insert({
+              ticket_id: ticket.id,
+              file_name: file.name,
+              file_type: file.type,
+              file_size: file.size,
+              storage_path: filePath,
+            })
+
+          if (attachmentError) {
+            // If there's an error creating the record, delete the uploaded file
+            await supabase.storage.from("ticket-attachments").remove([filePath])
+            throw attachmentError
+          }
+        })
+
+        await Promise.all(uploadPromises)
+      }
+
       toast({
         title: "Success",
         description: "Ticket updated successfully",
@@ -96,6 +135,25 @@ export function EditTicketDialog({
     } finally {
       setIsLoading(false)
     }
+  }
+
+  const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
+    const files = Array.from(e.target.files || [])
+    setSelectedFiles((prev) => [...prev, ...files])
+    // Reset the input value so the same file can be selected again
+    e.target.value = ""
+  }
+
+  const removeFile = (index: number) => {
+    setSelectedFiles((prev) => prev.filter((_, i) => i !== index))
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
   }
 
   return (
@@ -245,6 +303,78 @@ export function EditTicketDialog({
                   ))}
                 </SelectContent>
               </Select>
+            </div>
+          </div>
+
+          {/* Existing Attachments */}
+          {ticket.ticket_attachments &&
+            ticket.ticket_attachments.length > 0 && (
+              <div className="space-y-2">
+                <Label>Current Attachments</Label>
+                <div className="rounded-lg border p-4">
+                  <div className="space-y-2">
+                    {ticket.ticket_attachments.map((attachment) => (
+                      <div
+                        key={attachment.id}
+                        className="flex items-center justify-between rounded-lg border p-2"
+                      >
+                        <div className="flex items-center gap-2">
+                          <FileIcon className="h-4 w-4 text-muted-foreground" />
+                          <span className="text-sm">
+                            {attachment.file_name}
+                          </span>
+                          <span className="text-sm text-muted-foreground">
+                            ({formatFileSize(attachment.file_size)})
+                          </span>
+                        </div>
+                      </div>
+                    ))}
+                  </div>
+                </div>
+              </div>
+            )}
+
+          {/* New Attachments */}
+          <div className="space-y-2">
+            <Label htmlFor="attachments">Add Attachments</Label>
+            <div className="space-y-4">
+              <Input
+                id="attachments"
+                type="file"
+                onChange={handleFileChange}
+                multiple
+                accept={[
+                  "image/*",
+                  ".pdf",
+                  ".txt",
+                  ".csv",
+                  ".doc",
+                  ".docx",
+                  ".xls",
+                  ".xlsx",
+                ].join(",")}
+              />
+              {selectedFiles.length > 0 && (
+                <div className="flex flex-wrap gap-2">
+                  {selectedFiles.map((file, index) => (
+                    <Badge
+                      key={`${file.name}-${index}`}
+                      variant="secondary"
+                      className="flex items-center gap-2"
+                    >
+                      {file.name}
+                      <button
+                        type="button"
+                        onClick={() => removeFile(index)}
+                        className="rounded-full p-1 hover:bg-muted"
+                      >
+                        <X className="h-3 w-3" />
+                        <span className="sr-only">Remove file</span>
+                      </button>
+                    </Badge>
+                  ))}
+                </div>
+              )}
             </div>
           </div>
 

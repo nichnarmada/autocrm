@@ -7,12 +7,18 @@ export type Profile = Tables["profiles"]["Row"]
 // Base ticket type from Supabase
 export type BaseTicket = Tables["tickets"]["Row"]
 
+// Ticket attachment type with relations
+export type TicketAttachment = Tables["ticket_attachments"]["Row"] & {
+  uploaded_by: Profile | null
+}
+
 // Ticket type with all relations expanded
 export type Ticket = BaseTicket & {
   assigned_to: Profile | null
   created_by: Profile | null
   customer_id: Profile | null
   team_id: Tables["teams"]["Row"] | null
+  ticket_attachments?: TicketAttachment[]
   ticket_comments?: (Tables["ticket_comments"]["Row"] & {
     user_id: Profile | null
   })[]

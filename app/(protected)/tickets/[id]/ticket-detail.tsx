@@ -7,11 +7,22 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CommentSection } from "./comment-section"
 import { EditTicketDialog } from "@/components/tickets/edit-ticket-dialog"
-import { Pencil } from "lucide-react"
-import type { Ticket } from "@/types/tickets"
+import { Pencil, Download, FileIcon, Trash2 } from "lucide-react"
+import type { Ticket, TicketAttachment } from "@/types/tickets"
 import type { Team } from "@/types/teams"
 import type { Profile } from "@/types/users"
 import { Separator } from "@/components/ui/separator"
+import {
+  AlertDialog,
+  AlertDialogAction,
+  AlertDialogCancel,
+  AlertDialogContent,
+  AlertDialogDescription,
+  AlertDialogFooter,
+  AlertDialogHeader,
+  AlertDialogTitle,
+} from "@/components/ui/alert-dialog"
+import { useToast } from "@/hooks/use-toast"
 
 interface TicketDetailProps {
   ticket: Ticket
@@ -26,7 +37,10 @@ export function TicketDetail({
   const [isEditDialogOpen, setIsEditDialogOpen] = useState(false)
   const [teams, setTeams] = useState<Team[]>([])
   const [agents, setAgents] = useState<Profile[]>([])
+  const [deleteAttachment, setDeleteAttachment] =
+    useState<TicketAttachment | null>(null)
   const supabase = createClient()
+  const { toast } = useToast()
 
   // Fetch teams and agents for the edit dialog
   useEffect(() => {
@@ -67,12 +81,130 @@ export function TicketDetail({
           setTicket((current) => ({ ...current, ...payload.new }))
         }
       )
+      .on(
+        "postgres_changes",
+        {
+          event: "*",
+          schema: "public",
+          table: "ticket_attachments",
+          filter: `ticket_id=eq.${ticket.id}`,
+        },
+        async (payload) => {
+          // Fetch the complete attachment data with relations
+          if (payload.eventType === "INSERT") {
+            const { data } = await supabase
+              .from("ticket_attachments")
+              .select(
+                `
+                *,
+                uploaded_by:profiles!ticket_attachments_uploaded_by_fkey(
+                  id,
+                  full_name,
+                  email,
+                  avatar_url
+                )
+              `
+              )
+              .eq("id", payload.new.id)
+              .single()
+
+            if (data) {
+              setTicket((current) => ({
+                ...current,
+                ticket_attachments: [
+                  ...(current.ticket_attachments || []),
+                  data,
+                ],
+              }))
+            }
+          } else if (payload.eventType === "DELETE") {
+            setTicket((current) => ({
+              ...current,
+              ticket_attachments: current.ticket_attachments?.filter(
+                (a) => a.id !== payload.old.id
+              ),
+            }))
+          }
+        }
+      )
       .subscribe()
 
     return () => {
       supabase.removeChannel(channel)
     }
   }, [ticket.id])
+
+  const handleDownload = async (attachment: TicketAttachment) => {
+    try {
+      const response = await fetch(
+        `/api/tickets/${ticket.id}/attachments/${attachment.id}/download`
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to download file")
+      }
+
+      const { data } = await response.json()
+
+      // Create a link and click it to start the download
+      const link = document.createElement("a")
+      link.href = data.url
+      link.download = data.fileName
+      document.body.appendChild(link)
+      link.click()
+      document.body.removeChild(link)
+    } catch (error) {
+      console.error("Error downloading file:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description:
+          error instanceof Error ? error.message : "Failed to download file",
+      })
+    }
+  }
+
+  const handleDeleteAttachment = async (attachment: TicketAttachment) => {
+    try {
+      const response = await fetch(
+        `/api/tickets/${ticket.id}/attachments/${attachment.id}`,
+        {
+          method: "DELETE",
+        }
+      )
+
+      if (!response.ok) {
+        const error = await response.json()
+        throw new Error(error.error || "Failed to delete attachment")
+      }
+
+      toast({
+        title: "Success",
+        description: "Attachment deleted successfully",
+      })
+    } catch (error) {
+      console.error("Error deleting attachment:", error)
+      toast({
+        variant: "destructive",
+        title: "Error",
+        description:
+          error instanceof Error
+            ? error.message
+            : "Failed to delete attachment",
+      })
+    } finally {
+      setDeleteAttachment(null)
+    }
+  }
+
+  const formatFileSize = (bytes: number) => {
+    if (bytes === 0) return "0 Bytes"
+    const k = 1024
+    const sizes = ["Bytes", "KB", "MB", "GB"]
+    const i = Math.floor(Math.log(bytes) / Math.log(k))
+    return parseFloat((bytes / Math.pow(k, i)).toFixed(2)) + " " + sizes[i]
+  }
 
   return (
     <div className="flex h-[calc(100vh-4rem)] gap-6">
@@ -133,6 +265,60 @@ export function TicketDetail({
             </div>
           </CardContent>
         </Card>
+
+        {/* Attachments Section */}
+        {ticket.ticket_attachments && ticket.ticket_attachments.length > 0 && (
+          <Card>
+            <CardHeader>
+              <CardTitle>Attachments</CardTitle>
+            </CardHeader>
+            <CardContent>
+              <div className="space-y-4">
+                {ticket.ticket_attachments.map((attachment) => (
+                  <div
+                    key={attachment.id}
+                    className="flex items-center justify-between rounded-lg border p-4"
+                  >
+                    <div className="flex items-center gap-4">
+                      <FileIcon className="h-8 w-8 text-muted-foreground" />
+                      <div>
+                        <p className="font-medium">{attachment.file_name}</p>
+                        <p className="text-sm text-muted-foreground">
+                          {formatFileSize(attachment.file_size)} • Uploaded by{" "}
+                          {attachment.uploaded_by?.full_name} •{" "}
+                          {attachment.created_at &&
+                            new Date(attachment.created_at).toLocaleString()}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex items-center gap-2">
+                      <Button
+                        variant="ghost"
+                        size="sm"
+                        onClick={() => handleDownload(attachment)}
+                      >
+                        <Download className="mr-2 h-4 w-4" />
+                        Download
+                      </Button>
+                      {(userId === attachment.uploaded_by?.id ||
+                        userId === ticket.assigned_to?.id ||
+                        userId === ticket.created_by?.id) && (
+                        <Button
+                          variant="ghost"
+                          size="sm"
+                          onClick={() => setDeleteAttachment(attachment)}
+                        >
+                          <Trash2 className="mr-2 h-4 w-4" />
+                          Delete
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </CardContent>
+          </Card>
+        )}
 
         {/* Comments Section */}
         <CommentSection ticketId={ticket.id} />
@@ -204,6 +390,31 @@ export function TicketDetail({
         open={isEditDialogOpen}
         onOpenChange={setIsEditDialogOpen}
       />
+
+      <AlertDialog
+        open={deleteAttachment !== null}
+        onOpenChange={(open) => !open && setDeleteAttachment(null)}
+      >
+        <AlertDialogContent>
+          <AlertDialogHeader>
+            <AlertDialogTitle>Delete Attachment</AlertDialogTitle>
+            <AlertDialogDescription>
+              Are you sure you want to delete this attachment? This action
+              cannot be undone.
+            </AlertDialogDescription>
+          </AlertDialogHeader>
+          <AlertDialogFooter>
+            <AlertDialogCancel>Cancel</AlertDialogCancel>
+            <AlertDialogAction
+              onClick={() =>
+                deleteAttachment && handleDeleteAttachment(deleteAttachment)
+              }
+            >
+              Delete
+            </AlertDialogAction>
+          </AlertDialogFooter>
+        </AlertDialogContent>
+      </AlertDialog>
     </div>
   )
 }
