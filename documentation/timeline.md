@@ -35,7 +35,8 @@
 - [x] Search functionality
 - [x] Priority levels
 - [ ] Custom fields
-- [ ] File attachments
+- [x] File attachments
+- [ ] Rich Text editing
 
 ### Team Features
 
@@ -90,8 +91,8 @@
 
 ## Technical Debt & Optimization
 
-- [ ] Performance optimization
-- [ ] Code refactoring
+- [x] Performance optimization
+- [x] Code refactoring
 - [ ] Test coverage
 - [ ] Documentation updates
 

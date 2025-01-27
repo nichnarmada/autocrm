@@ -7,7 +7,7 @@ import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Button } from "@/components/ui/button"
 import { CommentSection } from "./comment-section"
 import { EditTicketDialog } from "@/components/tickets/edit-ticket-dialog"
-import { Pencil, Download, FileIcon, Trash2 } from "lucide-react"
+import { Pencil, Plus } from "lucide-react"
 import type { Ticket, TicketAttachment } from "@/types/tickets"
 import type { Team } from "@/types/teams"
 import type { Profile } from "@/types/users"
@@ -23,6 +23,9 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { useToast } from "@/hooks/use-toast"
+import { ImagePreviewDialog } from "@/components/ui/image-preview-dialog"
+import { TicketAttachmentsDialog } from "@/components/tickets/ticket-attachments-dialog"
+import { AttachmentPreview } from "@/components/attachments/attachment-preview"
 
 interface TicketDetailProps {
   ticket: Ticket
@@ -39,6 +42,12 @@ export function TicketDetail({
   const [agents, setAgents] = useState<Profile[]>([])
   const [deleteAttachment, setDeleteAttachment] =
     useState<TicketAttachment | null>(null)
+  const [previewAttachment, setPreviewAttachment] =
+    useState<TicketAttachment | null>(null)
+  const [attachmentUrls, setAttachmentUrls] = useState<Record<string, string>>(
+    {}
+  )
+  const [isAttachmentsDialogOpen, setIsAttachmentsDialogOpen] = useState(false)
   const supabase = createClient()
   const { toast } = useToast()
 
@@ -134,23 +143,52 @@ export function TicketDetail({
     }
   }, [ticket.id])
 
-  const handleDownload = async (attachment: TicketAttachment) => {
-    try {
-      const response = await fetch(
-        `/api/tickets/${ticket.id}/attachments/${attachment.id}/download`
-      )
+  // Fetch signed URLs for image attachments
+  useEffect(() => {
+    async function fetchSignedUrls() {
+      const imageAttachments =
+        ticket.ticket_attachments?.filter((a) =>
+          a.file_type.startsWith("image/")
+        ) || []
 
-      if (!response.ok) {
-        const error = await response.json()
-        throw new Error(error.error || "Failed to download file")
+      const urls: Record<string, string> = {}
+
+      for (const attachment of imageAttachments) {
+        try {
+          // Get signed URL directly from Supabase
+          const { data: signedUrl, error } = await supabase.storage
+            .from("ticket-attachments")
+            .createSignedUrl(attachment.storage_path, 60) // URL valid for 60 seconds
+
+          if (error) throw error
+          if (signedUrl) {
+            urls[attachment.id] = signedUrl.signedUrl
+          }
+        } catch (error) {
+          console.error("Error fetching signed URL:", error)
+        }
       }
 
-      const { data } = await response.json()
+      setAttachmentUrls(urls)
+    }
+
+    fetchSignedUrls()
+  }, [ticket.ticket_attachments])
+
+  const handleDownload = async (attachment: TicketAttachment) => {
+    try {
+      // Get signed URL directly from Supabase
+      const { data: signedUrl, error } = await supabase.storage
+        .from("ticket-attachments")
+        .createSignedUrl(attachment.storage_path, 60)
+
+      if (error) throw error
+      if (!signedUrl) throw new Error("Failed to generate download URL")
 
       // Create a link and click it to start the download
       const link = document.createElement("a")
-      link.href = data.url
-      link.download = data.fileName
+      link.href = signedUrl.signedUrl
+      link.download = attachment.file_name
       document.body.appendChild(link)
       link.click()
       document.body.removeChild(link)
@@ -228,7 +266,7 @@ export function TicketDetail({
 
         {/* Main Content */}
         <Card>
-          <CardHeader className="flex flex-row items-center justify-between space-y-0 pb-2">
+          <CardHeader className="flex flex-row items-center justify-between space-y-0">
             <div className="flex items-center justify-between">
               <div className="space-y-1">
                 <div className="text-sm text-muted-foreground">
@@ -264,61 +302,49 @@ export function TicketDetail({
               <p>{ticket.description}</p>
             </div>
           </CardContent>
-        </Card>
 
-        {/* Attachments Section */}
-        {ticket.ticket_attachments && ticket.ticket_attachments.length > 0 && (
-          <Card>
-            <CardHeader>
-              <CardTitle>Attachments</CardTitle>
-            </CardHeader>
-            <CardContent>
-              <div className="space-y-4">
-                {ticket.ticket_attachments.map((attachment) => (
-                  <div
-                    key={attachment.id}
-                    className="flex items-center justify-between rounded-lg border p-4"
-                  >
-                    <div className="flex items-center gap-4">
-                      <FileIcon className="h-8 w-8 text-muted-foreground" />
-                      <div>
-                        <p className="font-medium">{attachment.file_name}</p>
-                        <p className="text-sm text-muted-foreground">
-                          {formatFileSize(attachment.file_size)} • Uploaded by{" "}
-                          {attachment.uploaded_by?.full_name} •{" "}
-                          {attachment.created_at &&
-                            new Date(attachment.created_at).toLocaleString()}
-                        </p>
-                      </div>
-                    </div>
-                    <div className="flex items-center gap-2">
-                      <Button
-                        variant="ghost"
-                        size="sm"
-                        onClick={() => handleDownload(attachment)}
-                      >
-                        <Download className="mr-2 h-4 w-4" />
-                        Download
-                      </Button>
-                      {(userId === attachment.uploaded_by?.id ||
-                        userId === ticket.assigned_to?.id ||
-                        userId === ticket.created_by?.id) && (
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          onClick={() => setDeleteAttachment(attachment)}
-                        >
-                          <Trash2 className="mr-2 h-4 w-4" />
-                          Delete
-                        </Button>
-                      )}
-                    </div>
+          {/* Attachments Section */}
+          {ticket.ticket_attachments &&
+            ticket.ticket_attachments.length > 0 && (
+              <CardContent>
+                <div className="space-y-4">
+                  <div className="flex items-center justify-between">
+                    <h3 className="font-medium">Attachments</h3>
+                    <Button
+                      variant="outline"
+                      size="sm"
+                      className="h-8 px-2"
+                      onClick={() => setIsAttachmentsDialogOpen(true)}
+                    >
+                      <Plus className="mr-2 h-4 w-4" />
+                      Add Attachment
+                    </Button>
                   </div>
-                ))}
-              </div>
-            </CardContent>
-          </Card>
-        )}
+                  <div className="grid grid-cols-2 gap-4 sm:grid-cols-3">
+                    {ticket.ticket_attachments.map((attachment) => (
+                      <AttachmentPreview
+                        key={attachment.id}
+                        id={attachment.id}
+                        fileName={attachment.file_name}
+                        fileType={attachment.file_type}
+                        fileSize={attachment.file_size}
+                        storagePath={attachment.storage_path}
+                        previewUrl={attachmentUrls[attachment.id]}
+                        canDelete={
+                          userId === attachment.uploaded_by?.id ||
+                          userId === ticket.assigned_to?.id ||
+                          userId === ticket.created_by?.id
+                        }
+                        onDelete={() => setDeleteAttachment(attachment)}
+                        onDownload={() => handleDownload(attachment)}
+                        onPreview={() => setPreviewAttachment(attachment)}
+                      />
+                    ))}
+                  </div>
+                </div>
+              </CardContent>
+            )}
+        </Card>
 
         {/* Comments Section */}
         <CommentSection ticketId={ticket.id} />
@@ -415,6 +441,24 @@ export function TicketDetail({
           </AlertDialogFooter>
         </AlertDialogContent>
       </AlertDialog>
+
+      <ImagePreviewDialog
+        open={previewAttachment !== null}
+        onOpenChange={(open) => !open && setPreviewAttachment(null)}
+        imageUrl={
+          previewAttachment ? attachmentUrls[previewAttachment.id] : undefined
+        }
+        alt={previewAttachment?.file_name}
+      />
+
+      <TicketAttachmentsDialog
+        ticketId={ticket.id}
+        open={isAttachmentsDialogOpen}
+        onOpenChange={setIsAttachmentsDialogOpen}
+        userId={userId}
+        assignedToId={ticket.assigned_to?.id}
+        createdById={ticket.created_by?.id}
+      />
     </div>
   )
 }

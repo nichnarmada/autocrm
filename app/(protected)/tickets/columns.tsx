@@ -14,6 +14,7 @@ declare module "@tanstack/table-core" {
   interface TableMeta<TData> {
     teams: Team[]
     agents: Profile[]
+    userId: string
   }
 }
 
@@ -119,6 +120,7 @@ export const columns: ColumnDef<Ticket>[] = [
         row={row}
         teams={table.options.meta?.teams || []}
         agents={table.options.meta?.agents || []}
+        userId={table.options.meta?.userId || ""}
       />
     ),
   },

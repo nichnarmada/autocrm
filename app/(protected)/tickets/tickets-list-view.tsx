@@ -74,6 +74,7 @@ export function TicketsListView({
     meta: {
       teams,
       agents,
+      userId,
     },
     onSortingChange: setSorting,
     onColumnFiltersChange: setColumnFilters,

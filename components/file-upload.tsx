@@ -1,8 +1,7 @@
 "use client"
 
 import { useCallback, useState } from "react"
-import { FileIcon, UploadCloud, X } from "lucide-react"
-import { Badge } from "@/components/ui/badge"
+import { UploadCloud } from "lucide-react"
 import { Input } from "@/components/ui/input"
 import { cn } from "@/lib/utils"
 
@@ -182,31 +181,6 @@ export function FileUpload({
           </div>
         </div>
       </div>
-
-      {value.length > 0 && (
-        <div className="flex flex-wrap gap-2">
-          {value.map((file, index) => (
-            <Badge
-              key={`${file.name}-${index}`}
-              variant="secondary"
-              className="flex items-center gap-2"
-            >
-              <FileIcon className="h-3 w-3" />
-              <span>
-                {file.name} ({formatFileSize(file.size)})
-              </span>
-              <button
-                type="button"
-                onClick={() => handleRemove(index)}
-                className="rounded-full p-1 hover:bg-muted"
-              >
-                <X className="h-3 w-3" />
-                <span className="sr-only">Remove file</span>
-              </button>
-            </Badge>
-          ))}
-        </div>
-      )}
     </div>
   )
 }

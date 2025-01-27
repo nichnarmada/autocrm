@@ -1,10 +1,12 @@
 "use client"
 
 import { Row } from "@tanstack/react-table"
-import { Maximize2, Pencil, Trash } from "lucide-react"
+import { Maximize2, Pencil, Trash, Paperclip } from "lucide-react"
 import { useRouter } from "next/navigation"
-import { useState } from "react"
+import { useState, useEffect } from "react"
 import { useToast } from "@/hooks/use-toast"
+import { createClient } from "@/utils/supabase/client"
+import { cn } from "@/lib/utils"
 
 import { Button } from "@/components/ui/button"
 import {
@@ -18,6 +20,7 @@ import {
   AlertDialogTitle,
 } from "@/components/ui/alert-dialog"
 import { EditTicketDialog } from "@/components/tickets/edit-ticket-dialog"
+import { TicketAttachmentsDialog } from "@/components/tickets/ticket-attachments-dialog"
 import { deleteTicket } from "./api"
 import type { Ticket } from "@/types/tickets"
 import type { Team } from "@/types/teams"
@@ -32,19 +35,43 @@ interface DataTableRowActionsProps {
   row: Row<Ticket>
   teams: Team[]
   agents: Profile[]
+  userId: string
 }
 
 export function DataTableRowActions({
   row,
   teams,
   agents,
+  userId,
 }: DataTableRowActionsProps) {
   const router = useRouter()
   const { toast } = useToast()
   const ticket = row.original
   const [showDeleteDialog, setShowDeleteDialog] = useState(false)
   const [showEditDialog, setShowEditDialog] = useState(false)
+  const [showAttachmentsDialog, setShowAttachmentsDialog] = useState(false)
   const [isDeleting, setIsDeleting] = useState(false)
+  const [hasAttachments, setHasAttachments] = useState(false)
+  const supabase = createClient()
+
+  // Check if ticket has attachments
+  useEffect(() => {
+    async function checkAttachments() {
+      const { count, error } = await supabase
+        .from("ticket_attachments")
+        .select("*", { count: "exact", head: true })
+        .eq("ticket_id", ticket.id)
+
+      if (error) {
+        console.error("Error checking attachments:", error)
+        return
+      }
+
+      setHasAttachments(count ? count > 0 : false)
+    }
+
+    checkAttachments()
+  }, [ticket.id])
 
   const handleDelete = async () => {
     try {
@@ -74,7 +101,28 @@ export function DataTableRowActions({
   }
 
   return (
-    <div className="flex items-center gap-2">
+    <div className="flex items-center justify-end gap-2">
+      <Tooltip>
+        <TooltipTrigger asChild>
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={() => setShowAttachmentsDialog(true)}
+            className="h-8 w-8"
+          >
+            <Paperclip
+              className={cn("h-4 w-4", hasAttachments && "text-blue-500")}
+            />
+            <span className="sr-only">
+              {hasAttachments ? "View attachments" : "Add attachments"}
+            </span>
+          </Button>
+        </TooltipTrigger>
+        <TooltipContent>
+          {hasAttachments ? "View attachments" : "Add attachments"}
+        </TooltipContent>
+      </Tooltip>
+
       <Tooltip>
         <TooltipTrigger asChild>
           <Button
@@ -148,6 +196,15 @@ export function DataTableRowActions({
         agents={agents}
         open={showEditDialog}
         onOpenChange={setShowEditDialog}
+      />
+
+      <TicketAttachmentsDialog
+        ticketId={ticket.id}
+        open={showAttachmentsDialog}
+        onOpenChange={setShowAttachmentsDialog}
+        userId={userId}
+        assignedToId={ticket.assigned_to?.id}
+        createdById={ticket.created_by?.id}
       />
     </div>
   )
