@@ -206,6 +206,11 @@ export type Database = {
       }
       tickets: {
         Row: {
+          ai_classification_timestamp: string | null
+          ai_confidence: number | null
+          ai_suggested_category:
+            | Database["public"]["Enums"]["ticket_category"]
+            | null
           assigned_to: string | null
           category: Database["public"]["Enums"]["ticket_category"]
           created_at: string | null
@@ -221,6 +226,11 @@ export type Database = {
           updated_at: string | null
         }
         Insert: {
+          ai_classification_timestamp?: string | null
+          ai_confidence?: number | null
+          ai_suggested_category?:
+            | Database["public"]["Enums"]["ticket_category"]
+            | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null
@@ -236,6 +246,11 @@ export type Database = {
           updated_at?: string | null
         }
         Update: {
+          ai_classification_timestamp?: string | null
+          ai_confidence?: number | null
+          ai_suggested_category?:
+            | Database["public"]["Enums"]["ticket_category"]
+            | null
           assigned_to?: string | null
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null

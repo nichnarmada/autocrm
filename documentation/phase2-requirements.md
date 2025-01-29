@@ -1,61 +1,149 @@
 # Phase 2: AI Integration Requirements
 
-## Baseline AI Functionality
+## AI Feature Selection Guidelines
 
-### LLM Response System
+When selecting AI features for the CRM, ensure they:
 
-- Automated response generation
-- Contextually appropriate replies
-- Tone and style consistency
-- Human-readable formatting
+1. Address actual problems reported by users
+2. Integrate naturally with the Phase 1 application
+3. Include accuracy metrics to verify problem resolution
 
-### Knowledge Integration
+## Suggested AI Features
 
-- RAG (Retrieval-Augmented Generation) system
-- Knowledge base integration
-- Context-aware responses
-- Extensible knowledge sources
+### 1. AutoCRM
 
-### Automated Workflows
+- **Overview**: AI-powered chat interface for automated data entry and maintenance
+- **Key Capabilities**:
+  - Natural language processing for task understanding
+  - Object and field identification
+  - Automated database updates
+  - Step-by-step process transparency
+  - Action reversal and error correction
+  - Feedback collection for improvement
 
-- Ticket classification
-- Priority assignment
-- Routing logic
-- API integration capabilities
+### 2. InsightPilot
 
-## Advanced Features
+- **Overview**: Proactive insights engine for CRM data analysis
+- **Key Capabilities**:
+  - Pattern recognition across customer data
+  - Real-time insight generation
+  - Relationship mapping between data points
+  - Transparent reasoning process
+  - Drill-down analysis capabilities
+  - Learning from user feedback
+  - Personalized intervention suggestions
 
-### Self-Service Enhancement
+### 3. OutreachGPT
 
-- End-to-end ticket resolution
-- Clear escalation paths
-- Human intervention triggers
-- Success rate tracking
+- **Overview**: Context-aware communication generation system
+- **Key Capabilities**:
+  - Personalized message generation
+  - Context integration from CRM records
+  - Tone matching and consistency
+  - Batch processing capabilities
+  - Optimal timing suggestions
+  - Response tracking
+  - Communication style learning
 
-### Human Oversight
+## Technical Implementation
 
-- Review queue system
-- Quality control workflow
-- Intervention tracking
-- Performance metrics
+### Backend Infrastructure
 
-### Multi-Channel Support
+- **Primary**: Supabase
+  - Authentication and authorization
+  - Database and storage
+  - Edge Functions
+  - Vector data store
+  - Real-time capabilities
+  - Built-in AI agent support
 
-- Email integration
-- Chat support
-- Phone system integration
-- Multi-modal interactions
+### Development Tools
 
-### Administrative Tools
+- **Primary Stack**:
+  - Lovable + Cursor combination
+  - Cursor Agent for problem-solving
+  - GitHub for version control
+  - AWS Amplify 2.0 for deployment
 
-- AI performance dashboard
-- System status monitoring
-- Interactive data querying
-- Performance analytics
+### Code Organization
 
-### Learning System
+- AI-optimized code structure
+- Centralized edge function repository
+- MonoRepo approach for multiple UIs
 
-- Intervention logging
-- Training data collection
-- Model improvement workflow
-- Performance tracking
+### Agent Framework Options
+
+- **Recommended**: LangChain
+- Alternatives:
+  - LlamaIndex
+  - Custom Frameworks
+  - Cloud Platform Solutions
+
+### Agent Hosting
+
+- **Primary**: Supabase Edge Functions
+- Alternative: Amplify Cloud Functions (for larger agents)
+
+## Evaluation Requirements
+
+### Required Metrics (Choose 2)
+
+1. Success rate at identifying correct actions
+2. Accuracy of field updates
+3. Speed of response
+4. Error rates and types
+5. Custom metrics (with staff approval)
+
+### Evaluation Process
+
+1. Test Dataset Creation
+
+   - Document 20-30 common CRM requests
+   - Include simple and complex tasks
+   - Define expected outcomes
+
+2. Test Case Structure
+
+   - Input specification
+   - Expected output
+   - Required context
+   - Success criteria
+
+3. Monitoring Setup
+
+   - LangSmith/LangFuse integration
+   - Request tracing
+   - Detailed logging
+
+4. Testing Methodology
+   - Multiple test runs
+   - Phrase variations
+   - Context variations
+   - Error documentation
+
+## Deliverables
+
+1. **Brainlift**
+
+   - SpikyPOV documentation for AI feature selection
+
+2. **Walkthrough Video (3-5 minutes)**
+
+   - Feature demonstration
+   - LangSmith/LangFuse evaluation showcase
+
+3. **GitHub Repository**
+
+   - Complete project codebase
+   - Documentation
+   - Test cases
+
+4. **Deployed Application**
+
+   - Live demo environment
+   - Login access for graders
+
+5. **Accuracy Metrics**
+   - Implementation of chosen metrics
+   - Evaluation results
+   - Performance analysis
