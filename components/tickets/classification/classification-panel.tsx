@@ -1,11 +1,12 @@
 "use client"
 
 import { Badge } from "@/components/ui/badge"
+import { Button } from "@/components/ui/button"
 import { Card, CardContent, CardHeader, CardTitle } from "@/components/ui/card"
 import { Skeleton } from "@/components/ui/skeleton"
-import { SparklesIcon } from "lucide-react"
+import { SparklesIcon, CheckIcon } from "lucide-react"
 import type { ClassifierResult } from "@/types/agents/classifier"
-import { TicketCategory } from "@/types/tickets"
+import type { TicketCategory } from "@/types/tickets"
 
 interface ClassificationPanelProps {
   classification: ClassifierResult | null
@@ -28,6 +29,12 @@ export function ClassificationPanel({
 
   const confidencePercentage = Math.round(classification.confidence * 100)
   const isHighConfidence = classification.confidence >= 0.8
+  const isSuggestionApplied = classification.category === selectedCategory
+
+  const handleApplyClick = (e: React.MouseEvent, category: TicketCategory) => {
+    e.preventDefault()
+    onCategorySelect?.(category)
+  }
 
   return (
     <Card className="bg-muted/50">
@@ -44,21 +51,36 @@ export function ClassificationPanel({
         </div>
       </CardHeader>
       <CardContent className="space-y-3">
-        {/* Category */}
+        {/* Category with Apply button */}
         <div className="space-y-1">
           <label className="text-sm font-medium">Suggested Category</label>
-          <div className="flex items-center gap-2">
-            <Badge
-              variant={
-                classification.category === selectedCategory
-                  ? "default"
-                  : "outline"
-              }
-              className="cursor-pointer"
-              onClick={() => onCategorySelect?.(classification.category)}
+          <div className="flex items-center justify-between gap-2">
+            <div className="flex items-center gap-2">
+              <Badge
+                variant={isSuggestionApplied ? "default" : "outline"}
+                className="cursor-pointer"
+                onClick={(e) => handleApplyClick(e, classification.category)}
+              >
+                {classification.category}
+              </Badge>
+            </div>
+            <Button
+              size="sm"
+              type="button"
+              variant={isSuggestionApplied ? "outline" : "default"}
+              onClick={(e) => handleApplyClick(e, classification.category)}
+              disabled={isSuggestionApplied}
+              className="flex items-center gap-2"
             >
-              {classification.category}
-            </Badge>
+              {isSuggestionApplied ? (
+                <>
+                  <CheckIcon className="h-4 w-4" />
+                  Applied
+                </>
+              ) : (
+                "Apply Suggestion"
+              )}
+            </Button>
           </div>
         </div>
 

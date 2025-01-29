@@ -21,7 +21,6 @@ export async function classifyTicket(
   if (!input.title?.trim() || !input.description?.trim()) {
     throw new Error("Title and description are required")
   }
-  console.log("Input:", input)
 
   const promptMessages = await classificationPrompt.formatMessages({
     title: input.title,

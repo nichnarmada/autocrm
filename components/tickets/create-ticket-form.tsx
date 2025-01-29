@@ -179,6 +179,21 @@ export function CreateTicketForm({
             )}
           />
 
+          {(isClassifying || classification) && (
+            <ClassificationPanel
+              classification={classification}
+              isClassifying={isClassifying}
+              onCategorySelect={(category) => {
+                form.setValue("category", category, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                  shouldTouch: true,
+                })
+              }}
+              selectedCategory={form.getValues("category")}
+            />
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -213,10 +228,7 @@ export function CreateTicketForm({
               render={({ field }) => (
                 <FormItem>
                   <FormLabel>Category</FormLabel>
-                  <Select
-                    onValueChange={field.onChange}
-                    defaultValue={field.value}
-                  >
+                  <Select onValueChange={field.onChange} value={field.value}>
                     <FormControl>
                       <SelectTrigger>
                         <SelectValue placeholder="Select category" />
@@ -266,17 +278,6 @@ export function CreateTicketForm({
                   <FormMessage />
                 </FormItem>
               )}
-            />
-          )}
-
-          {(isClassifying || classification) && (
-            <ClassificationPanel
-              classification={classification}
-              isClassifying={isClassifying}
-              onCategorySelect={(category) => {
-                form.setValue("category", category)
-              }}
-              selectedCategory={form.getValues("category")}
             />
           )}
 

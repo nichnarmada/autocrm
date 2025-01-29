@@ -96,8 +96,6 @@ export async function createTicket(
 }
 
 export async function deleteTicket(id: string): Promise<void> {
-  console.log("[API] Deleting ticket:", id)
-
   const response = await fetch(`/api/tickets/${id}`, {
     method: "DELETE",
   })
@@ -107,6 +105,4 @@ export async function deleteTicket(id: string): Promise<void> {
     console.error("[API] Error deleting ticket:", error)
     throw new Error(error.error?.message || "Failed to delete ticket")
   }
-
-  console.log("[API] Successfully deleted ticket:", id)
 }
