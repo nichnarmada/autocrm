@@ -8,7 +8,9 @@ interface FileAttachment {
   file: File
 }
 
-export async function createTicket(data: CreateTicketData): Promise<void> {
+export async function createTicket(
+  data: CreateTicketData
+): Promise<{ id: string }> {
   const supabase = createClient()
   const user = (await supabase.auth.getUser()).data.user
 
@@ -88,6 +90,9 @@ export async function createTicket(data: CreateTicketData): Promise<void> {
       throw new Error("Failed to upload attachments")
     }
   }
+
+  // Return the ticket ID for redirection
+  return { id: ticket.id }
 }
 
 export async function deleteTicket(id: string): Promise<void> {

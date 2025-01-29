@@ -14,7 +14,7 @@ import {
   getSortedRowModel,
   useReactTable,
 } from "@tanstack/react-table"
-import { List, LayoutGrid } from "lucide-react"
+import { List, LayoutGrid, PlusCircle } from "lucide-react"
 import { Tabs, TabsList, TabsTrigger } from "@/components/ui/tabs"
 import {
   Table,
@@ -29,11 +29,11 @@ import { useRouter, usePathname, useSearchParams } from "next/navigation"
 import { columns } from "./columns"
 import { DataTablePagination } from "./data-table-pagination"
 import { DataTableToolbar } from "./data-table-toolbar"
-import { CreateTicketButton } from "@/components/tickets/create-ticket-button"
 import { ticketViews } from "@/constants/tickets/data"
 import type { Ticket } from "@/types/tickets"
 import type { Team } from "@/types/teams"
 import type { Profile } from "@/types/users"
+import { Button } from "@/components/ui/button"
 
 type ViewMode = "list" | "board"
 
@@ -154,7 +154,10 @@ export function TicketsListView({
             </TabsList>
           </Tabs>
 
-          <CreateTicketButton />
+          <Button onClick={() => router.push("/tickets/create")}>
+            <PlusCircle className="mr-2 h-4 w-4" />
+            Create Ticket
+          </Button>
         </div>
       </div>
 
