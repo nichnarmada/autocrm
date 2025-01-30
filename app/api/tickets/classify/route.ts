@@ -32,6 +32,25 @@ export async function POST(req: NextRequest) {
       description: description ?? "",
     } as ClassifierInput)
 
+    // Store the classification result if we have a ticketId
+    if (ticketId) {
+      const { error: updateError } = await supabase
+        .from("tickets")
+        .update({
+          ai_suggested_category: result.category,
+          ai_confidence: result.confidence,
+          ai_classification_timestamp: result.classificationTimestamp,
+        })
+        .eq("id", ticketId)
+
+      if (updateError) {
+        console.error(
+          "Failed to update ticket with AI classification:",
+          updateError
+        )
+      }
+    }
+
     return NextResponse.json({ result })
   } catch (error) {
     console.error("Classification error:", error)
