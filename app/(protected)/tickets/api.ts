@@ -42,6 +42,7 @@ export async function createTicket(
         category: data.category,
         status: data.status,
         team_id: data.team_id,
+        assigned_to: data.assigned_to,
         created_by: user.id,
         customer_id: isAgent ? null : user.id,
         created_on_behalf: isAgent,

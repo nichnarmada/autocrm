@@ -67,6 +67,7 @@ export function CreateTicketForm({
       category: "bug",
       status: "new",
       team_id: undefined,
+      assigned_to: undefined,
       attachments: [],
     },
   })
@@ -163,6 +164,10 @@ export function CreateTicketForm({
         ...values,
         attachments: selectedFiles.map((file) => ({ file })),
       }
+      console.log("[CreateTicketForm] Submitting form data:", {
+        ...formData,
+        assigned_to: formData.assigned_to,
+      })
       const result = await onSubmit(formData)
 
       form.reset()
@@ -300,66 +305,6 @@ export function CreateTicketForm({
             />
           )}
 
-          {teams && (
-            <div className="grid grid-cols-2 gap-4">
-              <FormField
-                control={form.control}
-                name="team_id"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assign to Team (Optional)</FormLabel>
-                    <Select onValueChange={field.onChange} value={field.value}>
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select team" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {teams.map((team) => (
-                          <SelectItem key={team.id} value={team.id}>
-                            {team.name}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-
-              <FormField
-                control={form.control}
-                name="assigned_to"
-                render={({ field }) => (
-                  <FormItem>
-                    <FormLabel>Assign to Agent (Optional)</FormLabel>
-                    <Select
-                      onValueChange={field.onChange}
-                      value={field.value}
-                      disabled={
-                        !form.getValues("team_id") || teamAgents.length === 0
-                      }
-                    >
-                      <FormControl>
-                        <SelectTrigger>
-                          <SelectValue placeholder="Select agent" />
-                        </SelectTrigger>
-                      </FormControl>
-                      <SelectContent>
-                        {teamAgents.map((agent) => (
-                          <SelectItem key={agent.id} value={agent.id}>
-                            {agent.full_name || agent.email}
-                          </SelectItem>
-                        ))}
-                      </SelectContent>
-                    </Select>
-                    <FormMessage />
-                  </FormItem>
-                )}
-              />
-            </div>
-          )}
-
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -419,6 +364,66 @@ export function CreateTicketForm({
               )}
             />
           </div>
+
+          {teams && (
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="team_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Team (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select team" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="assigned_to"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Agent (Optional)</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={
+                        !form.getValues("team_id") || teamAgents.length === 0
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select agent" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {teamAgents.map((agent) => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.full_name || agent.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
 
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Creating..." : "Create Ticket"}

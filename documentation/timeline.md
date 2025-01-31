@@ -77,36 +77,60 @@
      - `provideReasoning()`
    - **Triggers**: New ticket creation, Major ticket updates
 
-2. **Research Agent**
-   - **Purpose**: Historical analysis and pattern recognition
+2. **Team Routing Agent**
+
+   - **Purpose**: Determines best team for ticket handling
    - **Database Interactions**:
      - Reads from:
-       - `tickets` (all historical tickets)
-       - `ticket_comments` (resolution history)
-     - Writes to: `ticket_research_findings` (all fields)
+       - `teams` (team capabilities)
+       - `team_members` (team composition)
+       - `tickets` (category, priority)
+     - Writes to:
+       - `tickets` (team_id)
+       - `team_routing_metrics` (new table)
    - **Functions**:
-     - `findSimilarTickets()`
-     - `analyzePatterns()`
-     - `calculateScores()`
-   - **Triggers**: After Classifier Agent completes, Manual research request
+     - `analyzeTeamCapabilities()`
+     - `matchTicketToTeam()`
+     - `balanceTeamWorkload()`
+   - **Triggers**: After Classifier Agent completes
 
-- [ ] Database Updates
+3. **Agent Assignment Agent**
+
+   - **Purpose**: Selects best individual agent for ticket
+   - **Database Interactions**:
+     - Reads from:
+       - `profiles` (agent skills, workload)
+       - `ticket_resolution_history` (new table)
+     - Writes to:
+       - `tickets` (assigned_to)
+       - `agent_performance_metrics` (new table)
+   - **Functions**:
+     - `evaluateAgentExpertise()`
+     - `checkAgentAvailability()`
+     - `predictResolutionSuccess()`
+   - **Triggers**: After Team Routing Agent completes
+
+- [x] Database Updates
   - [x] Add AI classification columns
-  - [x] Add research findings columns
-  - [x] Add similar tickets reference columns
-- [ ] AI Infrastructure
-  - [ ] Set up LangGraph configuration
-  - [ ] Implement base agent framework
+  - [x] Add team routing metrics
+  - [x] Add agent performance metrics
+- [x] AI Infrastructure
+  - [x] Set up LangGraph configuration
+  - [x] Implement base agent framework
   - [ ] Create agent coordination system
-- [ ] Agent Implementation
-  - [ ] Classifier Agent
-    - [ ] Category identification
-    - [ ] Confidence scoring
-    - [ ] Reasoning capture
-  - [ ] Research Agent
-    - [ ] Similar ticket search
-    - [ ] Pattern recognition
-    - [ ] Solution suggestion
+- [x] Agent Implementation
+  - [x] Classifier Agent
+    - [x] Category identification
+    - [x] Confidence scoring
+    - [x] Reasoning capture
+  - [x] Team Routing Agent
+    - [x] Team capability analysis
+    - [x] Workload balancing
+    - [x] Team matching
+  - [x] Agent Assignment Agent
+    - [x] Agent expertise tracking
+    - [x] Availability management
+    - [x] Success prediction
 
 #### Phase 2.2: Prioritization Agents
 
@@ -127,6 +151,7 @@
    - **Triggers**: After Research Agent completes, Priority review requests
 
 4. **SLA Agent**
+
    - **Purpose**: Manages response and resolution timeframes
    - **Database Interactions**:
      - Reads from:
@@ -149,50 +174,6 @@
   - [ ] Workload analysis
   - [ ] Impact evaluation
 
-#### Phase 2.3: Assignment Agents
-
-5. **Team Routing Agent**
-
-   - **Purpose**: Determines best team for ticket handling
-   - **Database Interactions**:
-     - Reads from:
-       - `teams` (team capabilities)
-       - `team_members` (team composition)
-       - `ticket_research_findings` (complexity scores)
-     - Writes to:
-       - `tickets` (team_id)
-       - `team_routing_metrics` (new table)
-   - **Functions**:
-     - `analyzeTeamCapabilities()`
-     - `matchTicketToTeam()`
-     - `balanceTeamWorkload()`
-   - **Triggers**: After SLA Agent completes
-
-6. **Agent Assignment Agent**
-   - **Purpose**: Selects best individual agent for ticket
-   - **Database Interactions**:
-     - Reads from:
-       - `profiles` (agent skills, workload)
-       - `ticket_resolution_history` (new table)
-     - Writes to:
-       - `tickets` (assigned_to)
-       - `agent_performance_metrics` (new table)
-   - **Functions**:
-     - `evaluateAgentExpertise()`
-     - `checkAgentAvailability()`
-     - `predictResolutionSuccess()`
-   - **Triggers**: After Team Routing Agent completes
-
-- [ ] Database Updates
-  - [ ] Add agent expertise tracking
-  - [ ] Add workload metrics
-  - [ ] Add success rate tracking
-- [ ] Agent Implementation
-  - [ ] Team matching
-  - [ ] Agent matching
-  - [ ] Workload balancing
-  - [ ] Skill requirement analysis
-
 ### Phase 2.4: Integration & Optimization
 
 - [ ] System Integration
@@ -210,94 +191,48 @@
   - [ ] Override controls
   - [ ] Feedback collection
 
-### Agent Interaction Flow
+## Phase 3: Knowledge Base & Issue Research System
 
-#### Main Flow
+### Knowledge Base Structure
 
-```mermaid
-graph TD
-    A[New Ticket] --> B[Classifier Agent]
-    B --> C[Research Agent]
-    C --> D{Complexity Check}
-    D -->|Complex| E[Priority Agent]
-    D -->|Simple| F[SLA Agent]
-    E --> F
-    F --> G[Team Routing Agent]
-    G --> H[Agent Assignment Agent]
-    H --> I[Final Assignment]
+- [ ] Database Updates
+  - [ ] Create issues table
+  - [ ] Add issue patterns tracking
+  - [ ] Add solution effectiveness metrics
+- [ ] Issue Management
+  - [ ] Pattern identification
+  - [ ] Solution tracking
+  - [ ] Impact analysis
 
-    %% Feedback Loops
-    I -.->|Performance Data| C
-    I -.->|Update Patterns| B
-```
+### Research Agent 2.0
 
-#### Database Schema Interactions
+- [ ] Purpose: Issue-based research and pattern recognition
+- [ ] Database Interactions:
+  - Reads from:
+    - `issues` (known problems)
+    - `issue_patterns` (common patterns)
+    - `issue_solutions` (verified solutions)
+  - Writes to:
+    - `issue_matches` (similarity scores)
+    - `issue_insights` (new patterns)
+- [ ] Functions:
+  - [ ] `analyzeIssuePatterns()`
+  - [ ] `matchKnownIssues()`
+  - [ ] `suggestSolutions()`
+  - [ ] `trackSolutionEffectiveness()`
+- [ ] Integration
+  - [ ] Ticket creation flow
+  - [ ] Solution suggestion system
+  - [ ] Pattern learning system
 
-```mermaid
-graph LR
-    A[Tickets Table] --- B[Research Findings Table]
-    A --- C[SLA Metrics Table]
-    A --- D[Priority Metrics Table]
-    A --- E[Resolution History Table]
-    A --- F[Agent Performance Table]
-    A --- G[Team Routing Metrics Table]
-```
+### Knowledge Base UI
 
-### Agent Communication Patterns
-
-1. **Sequential Processing**
-
-   - Classifier → Research → Priority → SLA → Routing → Assignment
-   - Each agent waits for previous agent's completion
-   - Data passed through database state changes
-
-2. **Feedback Loops**
-
-   - Resolution outcomes feed back to Research Agent
-   - Agent performance metrics update routing decisions
-   - Pattern recognition improves classification accuracy
-
-3. **Parallel Operations**
-   - SLA monitoring runs independently
-   - Pattern analysis runs in background
-   - Performance metric collection is continuous
-
-### Performance Monitoring
-
-Each agent reports to a central monitoring system:
-
-- Accuracy metrics
-- Processing time
-- Decision confidence
-- Resource usage
-- Error rates
-
-### Fallback Mechanisms
-
-Each agent has built-in fallbacks:
-
-- Default classifications if Classifier fails
-- Manual routing options if automated routing fails
-- SLA defaults for new ticket types
-- Backup assignment rules for edge cases
-
-## Technical Debt & Optimization
-
-- [x] Performance optimization
-- [x] Code refactoring
-- [ ] Test coverage
-- [ ] Documentation updates
-
-## Notes
-
-- ✅ = Completed
-- 🚧 = In Progress
-- ⭐ = Priority Item
-- 📝 = Needs Review
-
-## Dependencies
-
-- MVP features required for Phase 1
-- Knowledge base required for customer portal
-- Template system needed for automation
-- API system needed for integrations
+- [ ] Components
+  - [ ] Issue pattern explorer
+  - [ ] Solution effectiveness dashboard
+  - [ ] Pattern analysis tools
+- [ ] Features
+  - [ ] Real-time issue matching
+  - [ ] Solution suggestion
+  - [ ] Pattern visualization
+  - [ ] Impact tracking

@@ -83,6 +83,11 @@ export async function POST(request: Request) {
     const supabase = await createClient()
     const json = await request.json()
 
+    console.log("[POST /api/tickets] Received request body:", {
+      ...json,
+      assigned_to: json.assigned_to,
+    })
+
     const {
       data: { user },
     } = await supabase.auth.getUser()
