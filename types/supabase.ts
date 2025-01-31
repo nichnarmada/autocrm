@@ -9,35 +9,158 @@ export type Json =
 export type Database = {
   public: {
     Tables: {
-      profiles: {
+      agent_assignment_metrics: {
         Row: {
-          avatar_url: string | null
+          agent_id: string | null
+          assignment_timestamp: string | null
+          confidence: number | null
           created_at: string | null
-          email: string | null
-          full_name: string | null
           id: string
-          is_profile_setup: boolean
-          role: Database["public"]["Enums"]["user_role"]
+          predicted_resolution_time: unknown | null
+          reasoning: string | null
+          skill_match_score: number | null
+          ticket_id: string | null
+          updated_at: string | null
+          workload_at_assignment: number | null
+        }
+        Insert: {
+          agent_id?: string | null
+          assignment_timestamp?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          predicted_resolution_time?: unknown | null
+          reasoning?: string | null
+          skill_match_score?: number | null
+          ticket_id?: string | null
+          updated_at?: string | null
+          workload_at_assignment?: number | null
+        }
+        Update: {
+          agent_id?: string | null
+          assignment_timestamp?: string | null
+          confidence?: number | null
+          created_at?: string | null
+          id?: string
+          predicted_resolution_time?: unknown | null
+          reasoning?: string | null
+          skill_match_score?: number | null
+          ticket_id?: string | null
+          updated_at?: string | null
+          workload_at_assignment?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_assignment_metrics_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_assignment_metrics_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      agent_performance_metrics: {
+        Row: {
+          agent_id: string | null
+          complexity_score: number | null
+          created_at: string | null
+          customer_satisfaction: number | null
+          id: string
+          resolution_quality_score: number | null
+          resolution_time: unknown | null
+          ticket_id: string | null
           updated_at: string | null
         }
         Insert: {
-          avatar_url?: string | null
+          agent_id?: string | null
+          complexity_score?: number | null
           created_at?: string | null
-          email?: string | null
-          full_name?: string | null
-          id: string
-          is_profile_setup?: boolean
-          role?: Database["public"]["Enums"]["user_role"]
+          customer_satisfaction?: number | null
+          id?: string
+          resolution_quality_score?: number | null
+          resolution_time?: unknown | null
+          ticket_id?: string | null
           updated_at?: string | null
         }
         Update: {
+          agent_id?: string | null
+          complexity_score?: number | null
+          created_at?: string | null
+          customer_satisfaction?: number | null
+          id?: string
+          resolution_quality_score?: number | null
+          resolution_time?: unknown | null
+          ticket_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "agent_performance_metrics_agent_id_fkey"
+            columns: ["agent_id"]
+            isOneToOne: false
+            referencedRelation: "profiles"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "agent_performance_metrics_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
+      profiles: {
+        Row: {
+          availability_status: string | null
+          avatar_url: string | null
+          created_at: string | null
+          current_workload: number | null
+          email: string | null
+          expertise: string[] | null
+          full_name: string | null
+          id: string
+          is_profile_setup: boolean
+          max_workload: number | null
+          role: Database["public"]["Enums"]["user_role"]
+          skill_levels: Json | null
+          updated_at: string | null
+        }
+        Insert: {
+          availability_status?: string | null
           avatar_url?: string | null
           created_at?: string | null
+          current_workload?: number | null
           email?: string | null
+          expertise?: string[] | null
+          full_name?: string | null
+          id: string
+          is_profile_setup?: boolean
+          max_workload?: number | null
+          role?: Database["public"]["Enums"]["user_role"]
+          skill_levels?: Json | null
+          updated_at?: string | null
+        }
+        Update: {
+          availability_status?: string | null
+          avatar_url?: string | null
+          created_at?: string | null
+          current_workload?: number | null
+          email?: string | null
+          expertise?: string[] | null
           full_name?: string | null
           id?: string
           is_profile_setup?: boolean
+          max_workload?: number | null
           role?: Database["public"]["Enums"]["user_role"]
+          skill_levels?: Json | null
           updated_at?: string | null
         }
         Relationships: []
@@ -81,26 +204,95 @@ export type Database = {
           },
         ]
       }
+      team_routing_metrics: {
+        Row: {
+          confidence: number | null
+          created_at: string | null
+          estimated_workload: number | null
+          id: string
+          reasoning: string | null
+          required_capabilities: string[] | null
+          routing_timestamp: string | null
+          team_id: string | null
+          ticket_id: string | null
+          updated_at: string | null
+          workload_at_time: number | null
+        }
+        Insert: {
+          confidence?: number | null
+          created_at?: string | null
+          estimated_workload?: number | null
+          id?: string
+          reasoning?: string | null
+          required_capabilities?: string[] | null
+          routing_timestamp?: string | null
+          team_id?: string | null
+          ticket_id?: string | null
+          updated_at?: string | null
+          workload_at_time?: number | null
+        }
+        Update: {
+          confidence?: number | null
+          created_at?: string | null
+          estimated_workload?: number | null
+          id?: string
+          reasoning?: string | null
+          required_capabilities?: string[] | null
+          routing_timestamp?: string | null
+          team_id?: string | null
+          ticket_id?: string | null
+          updated_at?: string | null
+          workload_at_time?: number | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "team_routing_metrics_team_id_fkey"
+            columns: ["team_id"]
+            isOneToOne: false
+            referencedRelation: "teams"
+            referencedColumns: ["id"]
+          },
+          {
+            foreignKeyName: "team_routing_metrics_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       teams: {
         Row: {
+          capabilities: string[] | null
           created_at: string | null
+          current_workload: number | null
           description: string | null
           id: string
+          max_workload: number | null
           name: string
+          specialties: string[] | null
           updated_at: string | null
         }
         Insert: {
+          capabilities?: string[] | null
           created_at?: string | null
+          current_workload?: number | null
           description?: string | null
           id?: string
+          max_workload?: number | null
           name: string
+          specialties?: string[] | null
           updated_at?: string | null
         }
         Update: {
+          capabilities?: string[] | null
           created_at?: string | null
+          current_workload?: number | null
           description?: string | null
           id?: string
+          max_workload?: number | null
           name?: string
+          specialties?: string[] | null
           updated_at?: string | null
         }
         Relationships: []
@@ -204,6 +396,56 @@ export type Database = {
           },
         ]
       }
+      ticket_research_findings: {
+        Row: {
+          complexity_score: number | null
+          created_at: string | null
+          frequency_score: number | null
+          id: string
+          impact_score: number | null
+          patterns: Json | null
+          research_timestamp: string | null
+          similar_tickets: Json | null
+          suggested_solutions: string[] | null
+          ticket_id: string | null
+          updated_at: string | null
+        }
+        Insert: {
+          complexity_score?: number | null
+          created_at?: string | null
+          frequency_score?: number | null
+          id?: string
+          impact_score?: number | null
+          patterns?: Json | null
+          research_timestamp?: string | null
+          similar_tickets?: Json | null
+          suggested_solutions?: string[] | null
+          ticket_id?: string | null
+          updated_at?: string | null
+        }
+        Update: {
+          complexity_score?: number | null
+          created_at?: string | null
+          frequency_score?: number | null
+          id?: string
+          impact_score?: number | null
+          patterns?: Json | null
+          research_timestamp?: string | null
+          similar_tickets?: Json | null
+          suggested_solutions?: string[] | null
+          ticket_id?: string | null
+          updated_at?: string | null
+        }
+        Relationships: [
+          {
+            foreignKeyName: "ticket_research_findings_ticket_id_fkey"
+            columns: ["ticket_id"]
+            isOneToOne: false
+            referencedRelation: "tickets"
+            referencedColumns: ["id"]
+          },
+        ]
+      }
       tickets: {
         Row: {
           ai_classification_timestamp: string | null
@@ -212,6 +454,8 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           assigned_to: string | null
+          assignment_attempts: number | null
+          assignment_confidence: number | null
           category: Database["public"]["Enums"]["ticket_category"]
           created_at: string | null
           created_by: string | null
@@ -219,7 +463,11 @@ export type Database = {
           customer_id: string | null
           description: string | null
           id: string
+          last_assignment_timestamp: string | null
+          last_routing_timestamp: string | null
           priority: Database["public"]["Enums"]["ticket_priority"]
+          routing_attempts: number | null
+          routing_confidence: number | null
           status: Database["public"]["Enums"]["ticket_status"]
           team_id: string | null
           title: string
@@ -232,6 +480,8 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           assigned_to?: string | null
+          assignment_attempts?: number | null
+          assignment_confidence?: number | null
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null
           created_by?: string | null
@@ -239,7 +489,11 @@ export type Database = {
           customer_id?: string | null
           description?: string | null
           id?: string
+          last_assignment_timestamp?: string | null
+          last_routing_timestamp?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          routing_attempts?: number | null
+          routing_confidence?: number | null
           status?: Database["public"]["Enums"]["ticket_status"]
           team_id?: string | null
           title: string
@@ -252,6 +506,8 @@ export type Database = {
             | Database["public"]["Enums"]["ticket_category"]
             | null
           assigned_to?: string | null
+          assignment_attempts?: number | null
+          assignment_confidence?: number | null
           category?: Database["public"]["Enums"]["ticket_category"]
           created_at?: string | null
           created_by?: string | null
@@ -259,7 +515,11 @@ export type Database = {
           customer_id?: string | null
           description?: string | null
           id?: string
+          last_assignment_timestamp?: string | null
+          last_routing_timestamp?: string | null
           priority?: Database["public"]["Enums"]["ticket_priority"]
+          routing_attempts?: number | null
+          routing_confidence?: number | null
           status?: Database["public"]["Enums"]["ticket_status"]
           team_id?: string | null
           title?: string
@@ -313,6 +573,7 @@ export type Database = {
         | "enhancement"
         | "other"
       ticket_priority: "low" | "medium" | "high" | "urgent"
+      ticket_routing_status: "pending" | "in_progress" | "completed" | "failed"
       ticket_status: "new" | "open" | "in_progress" | "resolved" | "closed"
       user_role: "admin" | "agent" | "customer"
     }
