@@ -22,14 +22,18 @@ import {
   SelectValue,
 } from "@/components/ui/select"
 import { useRouter } from "next/navigation"
-import { useState, useCallback } from "react"
+import { useState, useCallback, useEffect } from "react"
 import { ticketSchema } from "@/app/(protected)/tickets/schema"
 import type { z } from "zod"
-import { Team } from "@/types/teams"
+import type { Team } from "@/types/teams"
 import { FileUpload } from "@/components/file-upload"
 import { useTicketClassification } from "@/hooks/use-ticket-classification"
+import { useTeamRouting } from "@/hooks/use-team-routing"
+import { useAgentAssignment } from "@/hooks/use-agent-assignment"
 import { debounce } from "lodash"
 import { ClassificationPanel } from "@/components/tickets/classification/classification-panel"
+import { TeamRoutingPanel } from "@/components/tickets/routing/team-routing-panel"
+import { AgentAssignmentPanel } from "@/components/tickets/assignment/agent-assignment-panel"
 
 interface CreateTicketFormProps {
   teams?: Team[]
@@ -48,6 +52,8 @@ export function CreateTicketForm({
 
   const { classification, isClassifying, classifyTicket } =
     useTicketClassification()
+  const { routingResult, isRouting, routeTicket } = useTeamRouting()
+  const { assignmentResult, isAssigning, assignAgent } = useAgentAssignment()
 
   const form = useForm<z.infer<typeof ticketSchema>>({
     resolver: zodResolver(ticketSchema),
@@ -69,6 +75,13 @@ export function CreateTicketForm({
     [classifyTicket]
   )
 
+  const debouncedRoute = useCallback(
+    debounce((title: string, description: string, category: string) => {
+      routeTicket(title, description, category)
+    }, 500),
+    [routeTicket]
+  )
+
   const handleFieldChange = useCallback(
     (field: string, value: string) => {
       if (field === "title" || field === "description") {
@@ -81,6 +94,33 @@ export function CreateTicketForm({
     [debouncedClassify, form]
   )
 
+  // Watch for category changes to trigger team routing
+  useEffect(() => {
+    const category = form.watch("category")
+    const title = form.getValues("title")
+    const description = form.getValues("description")
+
+    if (title && description && category) {
+      debouncedRoute(title, description, category)
+    }
+  }, [form.watch("category"), debouncedRoute, form])
+
+  // Watch for team selection to trigger agent assignment
+  useEffect(() => {
+    const teamId = form.watch("team_id")
+    // Only trigger if we have both team and routing result
+    if (teamId && routingResult) {
+      assignAgent(
+        teamId,
+        form.getValues("title"),
+        form.getValues("description"),
+        form.getValues("category"),
+        routingResult.required_capabilities,
+        routingResult.estimated_workload
+      )
+    }
+  }, [form.watch("team_id"), routingResult, assignAgent, form])
+
   async function handleSubmit(values: z.infer<typeof ticketSchema>) {
     setIsSubmitting(true)
     try {
@@ -89,6 +129,7 @@ export function CreateTicketForm({
         attachments: selectedFiles.map((file) => ({ file })),
       }
       const result = await onSubmit(formData)
+
       form.reset()
       setSelectedFiles([])
       router.refresh()
@@ -191,6 +232,36 @@ export function CreateTicketForm({
                 })
               }}
               selectedCategory={form.getValues("category")}
+            />
+          )}
+
+          {(isRouting || routingResult) && (
+            <TeamRoutingPanel
+              routingResult={routingResult}
+              isRouting={isRouting}
+              onTeamSelect={(teamId: string) => {
+                form.setValue("team_id", teamId, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                  shouldTouch: true,
+                })
+              }}
+              selectedTeamId={form.getValues("team_id")}
+            />
+          )}
+
+          {(isAssigning || assignmentResult) && (
+            <AgentAssignmentPanel
+              assignmentResult={assignmentResult}
+              isAssigning={isAssigning}
+              onAgentSelect={(agentId: string) => {
+                form.setValue("assigned_to", agentId, {
+                  shouldValidate: true,
+                  shouldDirty: true,
+                  shouldTouch: true,
+                })
+              }}
+              selectedAgentId={form.getValues("assigned_to")}
             />
           )}
 
