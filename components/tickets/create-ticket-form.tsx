@@ -34,6 +34,8 @@ import { debounce } from "lodash"
 import { ClassificationPanel } from "@/components/tickets/classification/classification-panel"
 import { TeamRoutingPanel } from "@/components/tickets/routing/team-routing-panel"
 import { AgentAssignmentPanel } from "@/components/tickets/assignment/agent-assignment-panel"
+import { createClient } from "@/utils/supabase/client"
+import type { Profile } from "@/types/users"
 
 interface CreateTicketFormProps {
   teams?: Team[]
@@ -49,6 +51,7 @@ export function CreateTicketForm({
   const router = useRouter()
   const [isSubmitting, setIsSubmitting] = useState(false)
   const [selectedFiles, setSelectedFiles] = useState<File[]>([])
+  const [teamAgents, setTeamAgents] = useState<Profile[]>([])
 
   const { classification, isClassifying, classifyTicket } =
     useTicketClassification()
@@ -105,19 +108,51 @@ export function CreateTicketForm({
     }
   }, [form.watch("category"), debouncedRoute, form])
 
-  // Watch for team selection to trigger agent assignment
+  // Watch for team selection to fetch agents and trigger agent assignment
   useEffect(() => {
     const teamId = form.watch("team_id")
-    // Only trigger if we have both team and routing result
-    if (teamId && routingResult) {
-      assignAgent(
-        teamId,
-        form.getValues("title"),
-        form.getValues("description"),
-        form.getValues("category"),
-        routingResult.required_capabilities,
-        routingResult.estimated_workload
-      )
+    // Only trigger if we have team
+    if (teamId) {
+      // Fetch team agents
+      const fetchTeamAgents = async () => {
+        const supabase = createClient()
+        const { data: members, error } = await supabase
+          .from("team_members")
+          .select(
+            `
+            *,
+            profiles!team_members_user_id_fkey (
+              id,
+              full_name,
+              email,
+              avatar_url,
+              role
+            )
+          `
+          )
+          .eq("team_id", teamId)
+          .eq("profiles.role", "agent")
+
+        if (!error && members) {
+          setTeamAgents(members.map((member) => member.profiles))
+        }
+      }
+
+      fetchTeamAgents()
+
+      // Trigger agent assignment if we have routing result
+      if (routingResult) {
+        assignAgent(
+          teamId,
+          form.getValues("title"),
+          form.getValues("description"),
+          form.getValues("category"),
+          routingResult.required_capabilities,
+          routingResult.estimated_workload
+        )
+      }
+    } else {
+      setTeamAgents([])
     }
   }, [form.watch("team_id"), routingResult, assignAgent, form])
 
@@ -265,6 +300,66 @@ export function CreateTicketForm({
             />
           )}
 
+          {teams && (
+            <div className="grid grid-cols-2 gap-4">
+              <FormField
+                control={form.control}
+                name="team_id"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Team (Optional)</FormLabel>
+                    <Select onValueChange={field.onChange} value={field.value}>
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select team" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {teams.map((team) => (
+                          <SelectItem key={team.id} value={team.id}>
+                            {team.name}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+
+              <FormField
+                control={form.control}
+                name="assigned_to"
+                render={({ field }) => (
+                  <FormItem>
+                    <FormLabel>Assign to Agent (Optional)</FormLabel>
+                    <Select
+                      onValueChange={field.onChange}
+                      value={field.value}
+                      disabled={
+                        !form.getValues("team_id") || teamAgents.length === 0
+                      }
+                    >
+                      <FormControl>
+                        <SelectTrigger>
+                          <SelectValue placeholder="Select agent" />
+                        </SelectTrigger>
+                      </FormControl>
+                      <SelectContent>
+                        {teamAgents.map((agent) => (
+                          <SelectItem key={agent.id} value={agent.id}>
+                            {agent.full_name || agent.email}
+                          </SelectItem>
+                        ))}
+                      </SelectContent>
+                    </Select>
+                    <FormMessage />
+                  </FormItem>
+                )}
+              />
+            </div>
+          )}
+
           <div className="grid grid-cols-2 gap-4">
             <FormField
               control={form.control}
@@ -324,33 +419,6 @@ export function CreateTicketForm({
               )}
             />
           </div>
-
-          {teams && (
-            <FormField
-              control={form.control}
-              name="team_id"
-              render={({ field }) => (
-                <FormItem>
-                  <FormLabel>Assign to Team (Optional)</FormLabel>
-                  <Select onValueChange={field.onChange} value={field.value}>
-                    <FormControl>
-                      <SelectTrigger>
-                        <SelectValue placeholder="Select team" />
-                      </SelectTrigger>
-                    </FormControl>
-                    <SelectContent>
-                      {teams.map((team) => (
-                        <SelectItem key={team.id} value={team.id}>
-                          {team.name}
-                        </SelectItem>
-                      ))}
-                    </SelectContent>
-                  </Select>
-                  <FormMessage />
-                </FormItem>
-              )}
-            />
-          )}
 
           <Button type="submit" disabled={isSubmitting}>
             {isSubmitting ? "Creating..." : "Create Ticket"}

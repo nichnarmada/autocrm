@@ -47,6 +47,7 @@ export const ticketSchema = z.object({
     }
   ),
   team_id: z.string().optional(),
+  assigned_to: z.string().optional(),
   status: z
     .enum(["new", "open", "in_progress", "resolved", "closed"] as [
       TicketStatus,
